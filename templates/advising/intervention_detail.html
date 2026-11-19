@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}Intervention · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic advising</div>
+    <h1 class="page-title">{{ intervention.get_intervention_type_display }}</h1>
+    <p class="page-subtitle">{{ intervention.student.get_full_name|default:intervention.student.email }} · {{ intervention.student.matriculation_number|default:intervention.student.email }}</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'advising:intervention_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Interventions</a>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="col-7">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="section-title">Consultation summary</h2>
+        <span class="badge {% if intervention.status == 'RESOLVED' %}badge-low-risk{% elif intervention.status == 'IN_PROGRESS' %}badge-medium-risk{% else %}badge-neutral{% endif %}">{{ intervention.get_status_display }}</span>
+      </div>
+      <div class="card-body">
+        <div class="grid">
+          <div class="col-6"><div class="data-pair"><dt>Adviser</dt><dd>{{ intervention.adviser.get_full_name|default:intervention.adviser.email }}</dd></div></div>
+          <div class="col-6"><div class="data-pair"><dt>Conducted</dt><dd>{{ intervention.date_conducted|date:"d M Y" }}</dd></div></div>
+          <div class="col-6"><div class="data-pair"><dt>Follow-up</dt><dd>{{ intervention.follow_up_date|date:"d M Y"|default:"Not scheduled" }}</dd></div></div>
+          <div class="col-6"><div class="data-pair"><dt>Improvement</dt><dd>{% if intervention.is_improved is None %}Pending{% elif intervention.is_improved %}Observed{% else %}Not observed{% endif %}</dd></div></div>
+        </div>
+
+        <div class="divider"></div>
+        <h3 class="section-title">Identified difficulty</h3>
+        <p class="small">{{ intervention.reason }}</p>
+
+        <h3 class="section-title mt-3">Action plan</h3>
+        <p class="small">{{ intervention.action_taken }}</p>
+
+        {% if intervention.outcome_notes %}
+          <h3 class="section-title mt-3">Outcome notes</h3>
+          <p class="small">{{ intervention.outcome_notes }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2 class="section-title">Follow-up notes</h2></div>
+      <div class="card-body">
+        {% for note in notes %}
+          <div class="list-row">
+            <div>
+              <div class="list-title">{{ note.author.get_full_name|default:note.author.email }}</div>
+              <div class="list-meta">{{ note.content }}</div>
+            </div>
+            <span class="list-meta text-nowrap">{{ note.created_at|date:"d M Y H:i" }}</span>
+          </div>
+        {% empty %}
+          <p class="small muted">No follow-up notes yet.</p>
+        {% endfor %}
+
+        {% if intervention.status != 'RESOLVED' %}
+          <form method="post" class="mt-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_note">
+            <div class="filter-field">
+              <label class="form-label" for="note-content">Add a follow-up note</label>
+              <textarea id="note-content" name="note" class="form-control" rows="2" maxlength="4000" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-outline-secondary btn-sm mt-2">Add note</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-5">
+    <div class="card">
+      <div class="card-header"><h2 class="section-title">Current academic estimate</h2></div>
+      <div class="card-body">
+        {% if prediction %}
+          <span class="badge {% if prediction.risk_level == 'HIGH' %}badge-high-risk{% elif prediction.risk_level == 'MEDIUM' %}badge-medium-risk{% else %}badge-low-risk{% endif %}">{{ prediction.get_risk_level_display }}</span>
+          <span class="small-note ms-2">{{ prediction.risk_percentage }}% estimated likelihood</span>
+          <ul class="list-clean mt-3">
+            {% for factor in prediction.contributing_factors %}
+              <li class="list-row"><span class="small">{{ factor }}</span></li>
+            {% empty %}
+              <li class="small muted">No negative indicators recorded.</li>
+            {% endfor %}
+          </ul>
+          <p class="chart-caption">Advisory estimate only. It does not affect the student's official record.</p>
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='shield-check' title='No estimate available' text='An estimate appears once enough coursework and attendance data is recorded.' %}
+        {% endif %}
+      </div>
+    </div>
+
+    {% if intervention.status != 'RESOLVED' %}
+      <div class="card">
+        <div class="card-header"><h2 class="section-title">Resolve intervention</h2></div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="resolve">
+            <div class="filter-field">
+              <label class="form-label" for="outcome-notes">Observed outcome *</label>
+              <textarea id="outcome-notes" name="outcome_notes" class="form-control" rows="3" required></textarea>
+            </div>
+            <div class="filter-field">
+              <label class="form-label" for="improved">Did the student show improvement?</label>
+              <select id="improved" name="is_improved" class="form-select">
+                <option value="1">Yes, improvement observed</option>
+                <option value="0">No, support should continue</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-success mt-2">Mark as resolved</button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

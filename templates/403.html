@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Access denied · EduTrack{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-5">
+  <div class="col-md-7 col-lg-5">
+    <div class="card auth-card text-center">
+      <div class="card-body">
+        <span class="badge badge-high-risk mb-2">403 · Access denied</span>
+        <h1 class="auth-title">You cannot open this page</h1>
+        <p class="auth-subtitle">
+          Your current role or institution membership does not grant access.
+          If you believe this is a mistake, contact your institution administrator.
+        </p>
+        <div class="d-flex justify-content-center gap-2">
+          <a href="{% url 'dashboard:home' %}" class="btn btn-primary">Go to my dashboard</a>
+          <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">Profile</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

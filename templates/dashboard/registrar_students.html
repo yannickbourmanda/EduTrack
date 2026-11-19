@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Students · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Registrar's office</div>
+    <h1 class="page-title">Student directory</h1>
+    <p class="page-subtitle">Approved students registered at {{ institution.name }}.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'accounts:membership_management' %}?status=APPROVED" class="btn btn-outline-secondary btn-sm"><i class="bi bi-person-gear"></i> Membership records</a>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="directory-search">Search</label>
+    <input id="directory-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Name, email or matric number">
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Search</button>
+    {% if search %}<a href="{% url 'dashboard:registrar_students' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if student_rows %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th scope="col" class="ps-3">Student</th>
+            <th scope="col">Matric number</th>
+            <th scope="col">Programme</th>
+            <th scope="col">Department</th>
+            <th scope="col">Email</th>
+            <th scope="col" class="pe-3">Enrolments</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in student_rows %}
+            <tr>
+              <td class="ps-3"><span class="cell-title">{{ row.membership.user.get_full_name|default:row.membership.user.email }}</span></td>
+              <td class="small">{{ row.membership.user.matriculation_number|default:"—" }}</td>
+              <td class="small">{{ row.membership.programme.name|default:"—" }}</td>
+              <td class="small">{{ row.membership.department.name|default:"—" }}</td>
+              <td class="small muted">{{ row.membership.user.email }}</td>
+              <td class="pe-3"><span class="badge badge-neutral">{{ row.enrol_count }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='people' title='No students found' text='Approved student memberships will appear here.' %}
+  {% endif %}
+</div>
+{% endblock %}

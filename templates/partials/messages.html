@@ -1,0 +1,19 @@
+{% if messages %}
+  <div class="message-stack" role="status" aria-live="polite">
+    {% for message in messages %}
+      <div class="app-alert app-alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {% if message.tags == 'success' %}
+          <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+        {% elif message.tags == 'error' or message.tags == 'danger' %}
+          <i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i>
+        {% elif message.tags == 'warning' %}
+          <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        {% else %}
+          <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+        {% endif %}
+        <div class="app-alert-text">{{ message }}</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Dismiss"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

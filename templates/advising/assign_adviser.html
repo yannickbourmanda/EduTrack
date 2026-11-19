@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Assign adviser · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic advising</div>
+    <h1 class="page-title">Assign academic advisers</h1>
+    <p class="page-subtitle">Attach advisers of {{ institution.name }} to its students.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:institution_admin' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+  </div>
+</div>
+
+<div class="card" style="max-width: 760px;">
+  <div class="card-body">
+    {% if not advisers or not students %}
+      {% include 'partials/empty_state.html' with icon='people' title='Setup incomplete' text='An approved adviser and an approved student are required before an assignment can be recorded.' %}
+    {% else %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="filter-field">
+          <label class="form-label" for="assign-adviser">Adviser *</label>
+          <select id="assign-adviser" name="adviser" class="form-select" required>
+            <option value="">Choose an adviser</option>
+            {% for adviser in advisers %}
+              <option value="{{ adviser.id }}">{{ adviser.get_full_name|default:adviser.email }} ({{ adviser.staff_id|default:adviser.email }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label class="form-label" for="assign-student">Student *</label>
+          <select id="assign-student" name="student" class="form-select" required>
+            <option value="">Choose a student</option>
+            {% for student in students %}
+              <option value="{{ student.id }}">{{ student.get_full_name|default:student.email }} ({{ student.matriculation_number|default:student.email }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <button type="submit" class="btn btn-primary">Assign adviser</button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="section mt-3">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h2 class="section-title">Current assignments</h2>
+        <p class="section-note">Adviser–student pairs recorded for {{ institution.name }}.</p>
+      </div>
+    </div>
+    {% if assignments %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead><tr><th scope="col" class="ps-3">Student</th><th scope="col">Adviser</th><th scope="col" class="pe-3">Status</th></tr></thead>
+          <tbody>
+            {% for assignment in assignments %}
+              <tr>
+                <td class="ps-3">
+                  <span class="cell-title">{{ assignment.student.get_full_name|default:assignment.student.email }}</span>
+                  <span class="cell-sub d-block">{{ assignment.student.matriculation_number|default:assignment.student.email }}</span>
+                </td>
+                <td>
+                  <span class="fw-semibold">{{ assignment.adviser.get_full_name|default:assignment.adviser.email }}</span>
+                  <span class="cell-sub d-block">{{ assignment.adviser.email }}</span>
+                </td>
+                <td class="pe-3">
+                  {% if assignment.is_active %}
+                    <span class="badge badge-low-risk">Active</span>
+                  {% else %}
+                    <span class="badge badge-neutral">Inactive</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include 'partials/empty_state.html' with icon='people' title='No assignments recorded' text='Adviser assignments will appear here once created.' %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

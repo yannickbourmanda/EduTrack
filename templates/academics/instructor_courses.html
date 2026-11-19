@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}My courses · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Teaching workspace</div>
+    <h1 class="page-title">My assigned courses</h1>
+    <p class="page-subtitle">Only the course offerings assigned to you are listed.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'monitoring:assessment_management' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-clipboard2-check"></i> Assessments</a>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="offering-search">Search</label>
+    <input id="offering-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Course code or title">
+  </div>
+  <div class="filter-field">
+    <label for="offering-semester">Semester</label>
+    <select id="offering-semester" name="semester" class="form-select form-select-sm">
+      <option value="">All semesters</option>
+      {% for semester in semesters %}
+        <option value="{{ semester.id }}" {% if semester_filter == semester.id|stringformat:'s' %}selected{% endif %}>{{ semester.session.name }} · {{ semester.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+    {% if search or semester_filter %}<a href="{% url 'academics:instructor_courses' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+{% if offerings %}
+  <div class="card-grid">
+    {% for offering in offerings %}
+      <article class="course-card">
+        <header class="course-card-head">
+          <span class="course-code">{{ offering.course.code }}</span>
+          <span class="course-credits">{{ offering.course.credit_units }} credit{{ offering.course.credit_units|pluralize }}</span>
+        </header>
+        <div class="course-card-body">
+          <h2 class="course-title">{{ offering.course.title }}</h2>
+          <p class="course-desc">{{ offering.course.description|default:"No catalogue description recorded." }}</p>
+          <dl class="course-meta">
+            <div class="course-meta-row"><dt>Session</dt><dd>{{ offering.session.name }}</dd></div>
+            <div class="course-meta-row"><dt>Semester</dt><dd>{{ offering.semester.name }}</dd></div>
+            <div class="course-meta-row"><dt>Active enrolments</dt><dd>{{ offering.active_enrollments }}</dd></div>
+          </dl>
+        </div>
+        <footer class="course-card-foot">
+          <a href="{% url 'monitoring:enter_scores' offering.id %}" class="btn btn-sm btn-outline-secondary">Assessments</a>
+          <a href="{% url 'monitoring:record_attendance' offering.id %}" class="btn btn-sm btn-outline-secondary">Attendance</a>
+        </footer>
+      </article>
+    {% endfor %}
+  </div>
+  {% include 'partials/pagination.html' %}
+{% else %}
+  <div class="card">
+    {% if search or semester_filter %}
+      {% include 'partials/empty_state.html' with icon='journal-x' title='No courses match your filters' text='Change the search term or semester, or clear the filters.' %}
+    {% else %}
+      {% include 'partials/empty_state.html' with icon='journal-x' title='No courses assigned' text='Contact your institution administrator if a teaching assignment is missing.' %}
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

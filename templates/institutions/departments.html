@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Departments · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic structure</div>
+    <h1 class="page-title">Departments</h1>
+    <p class="page-subtitle">Departments configured for {{ institution.name }}, with their faculties, programmes and catalogue courses.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'institutions:structure_create' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-plus-lg"></i> Add department</a>
+    <a href="{% url 'institutions:structure_view' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-diagram-3"></i> Full structure</a>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="department-search">Search</label>
+    <input id="department-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Department, code or faculty">
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+    {% if search %}<a href="{% url 'institutions:departments' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if departments %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th scope="col" class="ps-3">Department</th>
+            <th scope="col">Faculty</th>
+            <th scope="col">Programmes</th>
+            <th scope="col">Courses</th>
+            <th scope="col" class="pe-3 text-end">Structure</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for department in departments %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ department.name }}</span>
+                <span class="cell-sub d-block">{{ department.code }}{% if department.description %} · {{ department.description|truncatechars:60 }}{% endif %}</span>
+              </td>
+              <td class="small">{{ department.faculty.name }}</td>
+              <td class="small">{{ department.programme_count }}</td>
+              <td class="small">{{ department.course_count }}</td>
+              <td class="pe-3 text-end">
+                <a href="{% url 'institutions:structure_view' %}#faculty-{{ department.faculty_id }}" class="btn btn-sm btn-outline-secondary">View in structure</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% if search %}
+      {% include 'partials/empty_state.html' with icon='diagram-3' title='No departments match your search' text='Change the search term or clear the filter.' %}
+    {% elif faculty_count == 0 %}
+      {% include 'partials/empty_state.html' with icon='buildings' title='No faculties configured' text='A department belongs to a faculty. Use “Add department” to create the first faculty and department.' %}
+    {% else %}
+      {% include 'partials/empty_state.html' with icon='diagram-3' title='No departments configured' text='Use “Add department” to create the academic departments for this institution.' %}
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

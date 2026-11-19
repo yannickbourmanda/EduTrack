@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block title %}Membership review · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Institution administration</div>
+    <h1 class="page-title">Membership review</h1>
+    <p class="page-subtitle">Review access requests for {{ institution.name }}. Only this institution's memberships are shown.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:institution_admin' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="member-search">Search</label>
+    <input id="member-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Name, email, matric or staff ID">
+  </div>
+  <div class="filter-field">
+    <label for="member-status">Status</label>
+    <select id="member-status" name="status" class="form-select form-select-sm">
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+      <option value="" {% if not status_filter %}selected{% endif %}>All statuses</option>
+    </select>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+    {% if search or status_filter %}<a href="{% url 'accounts:membership_management' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if memberships %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th scope="col" class="ps-3">Applicant</th><th scope="col">Requested role</th><th scope="col">Identifier</th><th scope="col">Requested</th><th scope="col">Status</th><th scope="col" class="text-end pe-3">Decision</th></tr>
+        </thead>
+        <tbody>
+          {% for membership in memberships %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ membership.user.get_full_name|default:membership.user.email }}</span>
+                <span class="cell-sub d-block">{{ membership.user.email }}</span>
+              </td>
+              <td>
+                <span class="badge badge-neutral">{{ membership.get_role_display }}</span>
+                {% if membership.department %}<span class="cell-sub d-block">{{ membership.department.name }}</span>{% endif %}
+              </td>
+              <td class="small">{{ membership.user.matriculation_number|default:membership.user.staff_id|default:"—" }}</td>
+              <td class="small muted">{{ membership.requested_at|date:"d M Y H:i" }}</td>
+              <td>
+                <span class="badge {% if membership.status == 'PENDING' %}badge-medium-risk{% elif membership.status == 'APPROVED' %}badge-low-risk{% elif membership.status == 'REJECTED' %}badge-high-risk{% else %}badge-neutral{% endif %}">
+                  {{ membership.get_status_display }}
+                </span>
+              </td>
+              <td class="text-end pe-3">
+                {% if membership.status == 'PENDING' %}
+                  <div class="inline-actions justify-content-end">
+                    <form method="post" action="{% url 'accounts:approve_membership' membership.id %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                    </form>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ membership.id }}">Decline</button>
+                  </div>
+
+                  <div class="modal fade" id="rejectModal{{ membership.id }}" tabindex="-1" aria-labelledby="rejectTitle{{ membership.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content text-start">
+                        <form method="post" action="{% url 'accounts:reject_membership' membership.id %}">
+                          {% csrf_token %}
+                          <div class="modal-header">
+                            <h2 class="modal-title fs-6" id="rejectTitle{{ membership.id }}">Decline membership request</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            <p class="small">Decline the request from <strong>{{ membership.user.get_full_name|default:membership.user.email }}</strong> for the role of {{ membership.get_role_display }}?</p>
+                            <div class="filter-field">
+                              <label class="form-label" for="reject-reason-{{ membership.id }}">Reason</label>
+                              <textarea id="reject-reason-{{ membership.id }}" name="rejection_reason" class="form-control" rows="3" maxlength="1000" placeholder="Explain why the request was declined."></textarea>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-sm btn-danger">Confirm decline</button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                {% elif membership.status == 'APPROVED' %}
+                  <div class="inline-actions justify-content-end">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#roleModal{{ membership.id }}">Change role</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#suspendModal{{ membership.id }}">Suspend</button>
+                  </div>
+
+                  <div class="modal fade" id="roleModal{{ membership.id }}" tabindex="-1" aria-labelledby="roleTitle{{ membership.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content text-start">
+                        <form method="post" action="{% url 'accounts:change_membership_role' membership.id %}">
+                          {% csrf_token %}
+                          <div class="modal-header">
+                            <h2 class="modal-title fs-6" id="roleTitle{{ membership.id }}">Change role</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            <p class="small">Select the new role for <strong>{{ membership.user.get_full_name|default:membership.user.email }}</strong>.</p>
+                            <div class="filter-field">
+                              <label class="form-label" for="role-{{ membership.id }}">New role</label>
+                              <select id="role-{{ membership.id }}" name="role" class="form-select">
+                                {% for value, label in role_choices %}
+                                  {% if value != 'PLATFORM_ADMIN' %}
+                                    <option value="{{ value }}" {% if membership.role == value %}selected{% endif %}>{{ label }}</option>
+                                  {% endif %}
+                                {% endfor %}
+                              </select>
+                              <div class="form-text">The institution must keep at least one active administrator.</div>
+                            </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-sm btn-primary">Update role</button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="modal fade" id="suspendModal{{ membership.id }}" tabindex="-1" aria-labelledby="suspendTitle{{ membership.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content text-start">
+                        <form method="post" action="{% url 'accounts:suspend_membership' membership.id %}">
+                          {% csrf_token %}
+                          <div class="modal-header">
+                            <h2 class="modal-title fs-6" id="suspendTitle{{ membership.id }}">Suspend membership</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            <p class="small">Suspend <strong>{{ membership.user.get_full_name|default:membership.user.email }}</strong>? They will immediately lose access to {{ institution.name }} until reactivated.</p>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-sm btn-danger">Suspend member</button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                {% elif membership.status == 'SUSPENDED' %}
+                  <div class="inline-actions justify-content-end">
+                    <form method="post" action="{% url 'accounts:reactivate_membership' membership.id %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-success">Reactivate</button>
+                    </form>
+                  </div>
+                {% endif %}
+
+                {% if membership.reviewed_by %}
+                  <span class="small muted d-block">
+                    {% if membership.reviewed_by %}Reviewed by {{ membership.reviewed_by.get_full_name|default:membership.reviewed_by.email }}{% else %}Reviewed{% endif %}
+                  </span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='inbox' title='No membership records' text='No records match the current filter.' %}
+  {% endif %}
+</div>
+{% endblock %}

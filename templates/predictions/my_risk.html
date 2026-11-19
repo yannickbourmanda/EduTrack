@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Academic alert · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Student record</div>
+    <h1 class="page-title">Academic alert</h1>
+    <p class="page-subtitle">An advisory estimate based on your recorded attendance and coursework.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:student' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="col-6">
+    <div class="card chart-card">
+      <div class="card-header">
+        <h2 class="section-title">Current estimate</h2>
+        {% if current_semester %}<p class="section-note">{{ current_semester.session.name }} · {{ current_semester.name }}</p>{% endif %}
+      </div>
+      <div class="card-body">
+        {% if prediction %}
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge {% if prediction.risk_level == 'HIGH' %}badge-high-risk{% elif prediction.risk_level == 'MEDIUM' %}badge-medium-risk{% else %}badge-low-risk{% endif %}">{{ prediction.get_risk_level_display }}</span>
+            <span class="small-note">{{ prediction.risk_percentage }}% estimated likelihood</span>
+          </div>
+          <div class="divider"></div>
+          <h3 class="section-title">Supporting indicators</h3>
+          <ul class="list-clean">
+            {% for factor in prediction.contributing_factors %}
+              <li class="list-row"><span class="small">{{ factor }}</span></li>
+            {% empty %}
+              <li class="small muted">No negative indicators recorded.</li>
+            {% endfor %}
+          </ul>
+          {% if prediction.recommendations %}
+            <h3 class="section-title mt-3">Suggested actions</h3>
+            <ul class="list-clean">
+              {% for recommendation in prediction.recommendations %}
+                <li class="list-row"><span class="small">{{ recommendation }}</span></li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <div class="advisory-notice mt-3">
+            This is an advisory estimate, not an official result. It does not change your grades, enrolment or transcript. Discuss any concerns with your academic adviser.
+          </div>
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='shield-check' title='No estimate available' text='An estimate appears once enough attendance and coursework data has been recorded.' %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="section-title">Estimate history</h2>
+        <p class="section-note">Previous advisory estimates for your account.</p>
+      </div>
+      {% if history %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th scope="col" class="ps-3">Date</th><th scope="col">Estimate</th><th scope="col">Likelihood</th><th scope="col" class="pe-3">Status</th></tr></thead>
+            <tbody>
+              {% for item in history %}
+                <tr>
+                  <td class="ps-3 small text-nowrap">{{ item.predicted_at|date:"d M Y" }}</td>
+                  <td>
+                    <span class="badge {% if item.risk_level == 'HIGH' %}badge-high-risk{% elif item.risk_level == 'MEDIUM' %}badge-medium-risk{% else %}badge-low-risk{% endif %}">{{ item.get_risk_level_display }}</span>
+                  </td>
+                  <td class="small">{{ item.risk_percentage }}%</td>
+                  <td class="pe-3">
+                    {% if item.is_current %}
+                      <span class="badge badge-neutral">Current</span>
+                    {% else %}
+                      <span class="small muted">Archived</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% include 'partials/pagination.html' %}
+      {% else %}
+        {% include 'partials/empty_state.html' with icon='clock-history' title='No estimate history' %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

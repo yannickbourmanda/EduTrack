@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Add academic structure · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic structure</div>
+    <h1 class="page-title">Add faculty, department or programme</h1>
+    <p class="page-subtitle">Build the academic hierarchy of {{ institution.name }}.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'institutions:structure_view' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Structure</a>
+  </div>
+</div>
+
+<div class="card" style="max-width: 760px;">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="filter-field">
+        <label class="form-label" for="structure-kind">What to create *</label>
+        <select id="structure-kind" name="kind" class="form-select" required>
+          <option value="">Choose what to create</option>
+          <option value="faculty">Faculty</option>
+          <option value="department">Department</option>
+          <option value="programme">Programme</option>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label class="form-label" for="structure-name">Name *</label>
+        <input id="structure-name" type="text" name="name" class="form-control" maxlength="255" required>
+      </div>
+
+      <div class="filter-field">
+        <label class="form-label" for="structure-code">Code *</label>
+        <input id="structure-code" type="text" name="code" class="form-control" maxlength="20" placeholder="e.g. CSC" required>
+        <div class="form-text">Codes are unique within your institution and are upper-cased automatically.</div>
+      </div>
+
+      <div class="filter-field">
+        <label class="form-label" for="structure-faculty">Faculty (departments only)</label>
+        <select id="structure-faculty" name="faculty" class="form-select">
+          <option value="">—</option>
+          {% for faculty in faculties %}
+            <option value="{{ faculty.id }}">{{ faculty.name }} ({{ faculty.code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label class="form-label" for="structure-department">Department (programmes only)</label>
+        <select id="structure-department" name="department" class="form-select">
+          <option value="">—</option>
+          {% for department in departments %}
+            <option value="{{ department.id }}">{{ department.name }} ({{ department.code }}) · {{ department.faculty.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="grid">
+        <div class="col-6">
+          <div class="filter-field">
+            <label class="form-label" for="structure-degree">Degree type (programmes only)</label>
+            <select id="structure-degree" name="degree_type" class="form-select">
+              {% for value, label in degree_types %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="filter-field">
+            <label class="form-label" for="structure-duration">Duration in years (programmes only)</label>
+            <input id="structure-duration" type="number" name="duration_years" class="form-control" min="1" max="10" value="4">
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <a href="{% url 'institutions:structure_view' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

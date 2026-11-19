@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}My attendance · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Student record</div>
+    <h1 class="page-title">My attendance</h1>
+    <p class="page-subtitle">Lecture attendance recorded by your instructors.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:student' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+  </div>
+</div>
+
+<div class="card">
+  {% if records %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th scope="col" class="ps-3">Date</th><th scope="col">Course</th><th scope="col">Topic</th><th scope="col">Status</th><th scope="col" class="pe-3">Notes</th></tr>
+        </thead>
+        <tbody>
+          {% for record in records %}
+            <tr>
+              <td class="ps-3 small text-nowrap">{{ record.class_session.session_date|date:"d M Y" }}</td>
+              <td>
+                <span class="fw-semibold">{{ record.class_session.course_offering.course.code }}</span>
+                <span class="cell-sub d-block">{{ record.class_session.course_offering.course.title|truncatechars:28 }}</span>
+              </td>
+              <td class="small muted">{{ record.class_session.topic|default:"Regular lecture" }}</td>
+              <td>
+                <span class="badge
+                  {% if record.status == 'PRESENT' %}badge-low-risk{% elif record.status == 'LATE' %}badge-medium-risk{% elif record.status == 'EXCUSED' %}badge-neutral{% else %}badge-high-risk{% endif %}">
+                  {{ record.get_status_display }}
+                </span>
+              </td>
+              <td class="pe-3 small muted">{{ record.notes|default:"—" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='calendar-x' title='No attendance records' text='Attendance appears after class sessions are recorded.' %}
+  {% endif %}
+</div>
+{% endblock %}

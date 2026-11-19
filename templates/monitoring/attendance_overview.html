@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Attendance · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Teaching workspace</div>
+    <h1 class="page-title">Lecture attendance</h1>
+    <p class="page-subtitle">Select an assigned course to record attendance and participation.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'monitoring:assessment_management' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-clipboard2-check"></i> Assessments</a>
+  </div>
+</div>
+
+{% if offerings %}
+  <div class="grid">
+    {% for offering in offerings %}
+      <div class="col-4">
+        <div class="card chart-card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="badge badge-neutral">{{ offering.course.code }}</span>
+            <span class="small muted">{{ offering.semester.name }}</span>
+          </div>
+          <div class="card-body">
+            <h2 class="section-title">{{ offering.course.title }}</h2>
+            <div class="divider"></div>
+            <div class="data-pair"><dt>Enrolled students</dt><dd>{{ offering.enrolled_students_count }}</dd></div>
+            <div class="data-pair"><dt>Sessions recorded</dt><dd>{{ offering.class_sessions.count }}</dd></div>
+          </div>
+          <div class="card-footer">
+            <a href="{% url 'monitoring:record_attendance' offering.id %}" class="btn btn-sm btn-primary w-100">Record attendance</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card">
+    {% include 'partials/empty_state.html' with icon='calendar-x' title='No assigned courses' text='Attendance can be recorded once a course is assigned to you.' %}
+  </div>
+{% endif %}
+{% endblock %}

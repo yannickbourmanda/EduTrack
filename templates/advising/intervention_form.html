@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Log intervention · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic advising</div>
+    <h1 class="page-title">Log academic intervention</h1>
+    <p class="page-subtitle">Record a consultation for one of your assigned students.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:adviser' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+  </div>
+</div>
+
+<div class="card" style="max-width: 760px;">
+  <div class="card-body">
+    {% if not assigned_students %}
+      {% include 'partials/empty_state.html' with icon='people' title='No assigned students' text='Interventions can only be logged for students assigned to you.' %}
+    {% else %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="filter-field">
+          <label class="form-label" for="intervention-student">Assigned student *</label>
+          <select id="intervention-student" name="student" class="form-select" required>
+            <option value="">Choose a student</option>
+            {% for student in assigned_students %}
+              <option value="{{ student.id }}" {% if selected_student and selected_student.id == student.id %}selected{% endif %}>{{ student.get_full_name|default:student.email }} ({{ student.matriculation_number|default:student.email }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="grid">
+          <div class="col-6">
+            <div class="filter-field">
+              <label class="form-label" for="intervention-type">Intervention type *</label>
+              <select id="intervention-type" name="intervention_type" class="form-select">
+                {% for value, label in intervention_types %}
+                  <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="filter-field">
+              <label class="form-label" for="intervention-date">Date conducted *</label>
+              <input id="intervention-date" type="date" name="date_conducted" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label class="form-label" for="intervention-reason">Academic trigger or identified difficulty *</label>
+          <textarea id="intervention-reason" name="reason" class="form-control" rows="3" required placeholder="Describe the recorded concern, for example low attendance or a declined assessment average."></textarea>
+        </div>
+
+        <div class="filter-field">
+          <label class="form-label" for="intervention-action">Action taken and agreed plan *</label>
+          <textarea id="intervention-action" name="action_taken" class="form-control" rows="3" required placeholder="Describe the support agreed with the student."></textarea>
+        </div>
+
+        <div class="filter-field">
+          <label class="form-label" for="intervention-followup">Follow-up date</label>
+          <input id="intervention-followup" type="date" name="follow_up_date" class="form-control">
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <a href="{% url 'dashboard:adviser' %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Save intervention</button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

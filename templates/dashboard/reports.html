@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% block title %}Reports · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Institutional reporting</div>
+    <h1 class="page-title">Academic reports</h1>
+    <p class="page-subtitle">Recorded academic performance for {{ institution.name }}. All figures come from stored results and attendance.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:institution_admin' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+    <a href="{% url 'dashboard:audit_logs' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-shield-check"></i> Activity log</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat">
+    <div class="stat-label">Academic session</div>
+    <div class="stat-value" style="font-size:1.1rem;">{{ current_session.name|default:"Not set" }}</div>
+    <div class="stat-hint">Semester: {{ current_semester.name|default:"Not set" }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Students</div>
+    <div class="stat-value">{{ student_count }}</div>
+    <div class="stat-hint">{{ enrollment_count }} active enrolment{{ enrollment_count|pluralize }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Average performance</div>
+    <div class="stat-value {% if average is not None and average < 50 %}is-danger{% endif %}">
+      {% if average is not None %}{{ average }}%{% else %}—{% endif %}
+    </div>
+    <div class="stat-hint">{{ scored_enrollments }} recorded result{{ scored_enrollments|pluralize }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Active offerings</div>
+    <div class="stat-value">{{ offering_count }}</div>
+    <div class="stat-hint">{{ course_count }} courses · {{ department_count }} departments</div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="grid">
+    <div class="col-6">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h2 class="section-title">Performance trend</h2>
+          <p class="section-note">Average recorded performance by semester.</p>
+        </div>
+        <div class="card-body">
+          {% if performance_trend %}
+            <div class="chart-wrap"><canvas id="reportPerformanceChart" role="img" aria-label="Line chart of average performance by semester"></canvas></div>
+            {% include 'partials/chart_data_table.html' with chart_data_rows=performance_trend chart_data_caption='Average performance by semester' chart_data_value_header='Average performance (%)' chart_data_suffix='%' %}
+          {% else %}
+            {% include 'partials/empty_state.html' with icon='graph-up' title='No trend data' text='Recorded results are needed to build a trend.' %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-6">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h2 class="section-title">Score distribution</h2>
+          <p class="section-note">Recorded results grouped into score bands.</p>
+        </div>
+        <div class="card-body">
+          {% if grade_distribution.total %}
+            <div class="chart-wrap"><canvas id="reportDistributionChart" role="img" aria-label="Bar chart of score bands"></canvas></div>
+            <p class="chart-caption">{{ grade_distribution.total }} recorded result{{ grade_distribution.total|pluralize }} included.</p>
+            {% include 'partials/chart_data_table.html' with chart_data_columns=grade_distribution.labels chart_data_values=grade_distribution.values chart_data_caption='Recorded results by score band' chart_data_series_name='Recorded results' %}
+          {% else %}
+            {% include 'partials/empty_state.html' with icon='bar-chart' title='No recorded scores' %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="section-title">Course performance</h2>
+      <p class="section-note">Active course offerings with recorded results.</p>
+    </div>
+    {% if course_table %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr><th scope="col" class="ps-3">Course</th><th scope="col">Average performance</th><th scope="col" class="pe-3">Evidence</th></tr>
+          </thead>
+          <tbody>
+            {% for row in course_table %}
+              <tr>
+                <td class="ps-3"><span class="cell-title">{{ row.code }}</span></td>
+                <td>
+                  {% if row.average is not None %}
+                    <span class="fw-semibold">{{ row.average }}%</span>
+                  {% else %}
+                    <span class="muted small">No recorded results</span>
+                  {% endif %}
+                </td>
+                <td class="pe-3 small muted">{{ row.meta }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include 'partials/empty_state.html' with icon='journal-x' title='No active course offerings' text='Reports appear once courses and results are recorded.' %}
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="section-title">Class performance</h2>
+      <p class="section-note">Active course offerings. Class averages are published only with at least 5 recorded results; the evidence column explains each row.</p>
+    </div>
+    {% if class_rows %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr><th scope="col" class="ps-3">Course</th><th scope="col">Instructor</th><th scope="col">Enrolled</th><th scope="col">Results</th><th scope="col">Attendance</th><th scope="col" class="pe-3">Average</th></tr>
+          </thead>
+          <tbody>
+            {% for row in class_rows %}
+              <tr>
+                <td class="ps-3"><span class="cell-title">{{ row.offering.course.code }}</span><span class="cell-sub d-block">{{ row.offering.course.title|truncatechars:34 }} · {{ row.offering.semester.name }}</span></td>
+                <td class="small">{{ row.offering.instructor.get_full_name|default:"Unassigned" }}</td>
+                <td class="small">{{ row.enrolled_count }}</td>
+                <td class="small">{{ row.record_count }}</td>
+                <td class="small">{% if row.attendance is not None %}{{ row.attendance }}%{% else %}<span class="muted">No records</span>{% endif %}</td>
+                <td class="pe-3">
+                  {% if row.average is not None %}
+                    <span class="fw-semibold">{{ row.average }}%</span>
+                  {% else %}
+                    <span class="muted small">Insufficient data ({{ row.record_count }} result{{ row.record_count|pluralize }})</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="section-note px-3 pb-3">Showing up to 50 of {{ class_count }} active offerings. Suppressed averages protect small classes from identifying individual students; compare classes only with comparable assessment structures in mind.</p>
+    {% else %}
+      {% include 'partials/empty_state.html' with icon='easel' title='No active course offerings' text='Reports appear once courses and results are recorded.' %}
+    {% endif %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="section-title">Department performance</h2>
+      <p class="section-note">Departments with at least one recorded result show an average.</p>
+    </div>
+    {% if departments.rows %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr><th scope="col" class="ps-3">Department</th><th scope="col">Faculty</th><th scope="col">Students</th><th scope="col">Results</th><th scope="col">Attendance</th><th scope="col" class="pe-3">Average</th></tr>
+          </thead>
+          <tbody>
+            {% for row in departments.rows %}
+              <tr>
+                <td class="ps-3"><span class="cell-title">{{ row.department.name }}</span><span class="cell-sub d-block">{{ row.department.code }}</span></td>
+                <td class="small muted">{{ row.department.faculty.name }}</td>
+                <td class="small">{{ row.student_count }}</td>
+                <td class="small">{{ row.record_count }}</td>
+                <td class="small">
+                  {% if row.attendance_rate is not None %}
+                    {{ row.attendance_rate }}%
+                    <span class="cell-sub d-block">{{ row.attendance_entries }} entries</span>
+                  {% else %}
+                    <span class="muted small">No records</span>
+                  {% endif %}
+                </td>
+                <td class="pe-3">
+                  {% if row.average is not None %}
+                    <span class="fw-semibold">{{ row.average }}%</span>
+                  {% else %}
+                    <span class="muted small">No data</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include 'partials/empty_state.html' with icon='diagram-3' title='No departments configured' %}
+    {% endif %}
+  </div>
+</section>
+
+{{ performance_trend|json_script:"report-performance-data" }}
+{{ grade_distribution|json_script:"report-distribution-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    var palette = window.EduTrackCharts.palette;
+    if (document.getElementById('reportPerformanceChart')) {
+      var performanceData = JSON.parse(document.getElementById('report-performance-data').textContent);
+      window.EduTrackCharts.line('reportPerformanceChart', performanceData.map(function (row) { return row.label; }), [
+        { label: 'Average performance', data: performanceData.map(function (row) { return row.value; }), borderColor: palette.primary, backgroundColor: palette.primaryFill, fill: true }
+      ]);
+    }
+
+    if (document.getElementById('reportDistributionChart')) {
+      var distributionData = JSON.parse(document.getElementById('report-distribution-data').textContent);
+      window.EduTrackCharts.bar('reportDistributionChart', distributionData.labels, [
+        { label: 'Recorded results', data: distributionData.values, backgroundColor: distributionData.colors, borderRadius: 3 }
+      ]);
+    }
+  })();
+</script>
+{% endblock %}

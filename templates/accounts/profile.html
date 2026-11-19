@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Profile · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">Your account</div>
+    <h1 class="page-title">Profile</h1>
+    <p class="page-subtitle">Update your contact details. Official identifiers are managed by your institution.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'accounts:password_change' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-shield-lock"></i> Change password</a>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="col-7">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="section-title">Personal details</h2>
+      </div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="grid">
+            <div class="col-6">
+              <div class="filter-field">
+                <label class="form-label" for="profile-first-name">First name</label>
+                <input id="profile-first-name" type="text" name="first_name" class="form-control" value="{{ user.first_name }}" maxlength="150">
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="filter-field">
+                <label class="form-label" for="profile-last-name">Last name</label>
+                <input id="profile-last-name" type="text" name="last_name" class="form-control" value="{{ user.last_name }}" maxlength="150">
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-field">
+            <label class="form-label" for="profile-phone">Phone number</label>
+            <input id="profile-phone" type="text" name="phone_number" class="form-control" value="{{ user.phone_number|default:'' }}" maxlength="20">
+          </div>
+
+          <div class="filter-field">
+            <label class="form-label">Official identifier</label>
+            <input type="text" class="form-control" value="{{ user.matriculation_number|default:user.staff_id|default:'Not recorded' }}" readonly>
+            <div class="form-text">Matriculation and staff identifiers are managed by the institution registrar.</div>
+          </div>
+
+          <div class="filter-field">
+            <label class="form-label" for="profile-bio">Profile notes</label>
+            <textarea id="profile-bio" name="profile_bio" class="form-control" rows="3" maxlength="2000">{{ user.profile_bio }}</textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Save changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-5">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="section-title">Institutional memberships</h2>
+      </div>
+      {% if user_memberships %}
+        <ul class="list-clean">
+          {% for membership in user_memberships %}
+            <li class="list-row">
+              <div>
+                <div class="list-title">{{ membership.institution.name }}</div>
+                <div class="list-meta">{{ membership.get_role_display }} · {{ membership.institution.code }}</div>
+              </div>
+              {% if active_membership and membership.id == active_membership.id %}
+                <span class="badge badge-low-risk">Active</span>
+              {% else %}
+                <form method="post" action="{% url 'accounts:switch_institution' membership.id %}" class="m-0">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-secondary">Switch</button>
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        {% include 'partials/empty_state.html' with icon='buildings' title='No approved memberships' %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

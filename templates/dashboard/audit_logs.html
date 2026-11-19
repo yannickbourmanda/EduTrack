@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Activity log · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Accountability</div>
+    <h1 class="page-title">Institution activity log</h1>
+    <p class="page-subtitle">Recorded academic and administrative actions for {{ institution.name }}.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:institution_admin' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="log-search">Search</label>
+    <input id="log-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Description, name or email">
+  </div>
+  <div class="filter-field">
+    <label for="log-action">Action category</label>
+    <select id="log-action" name="action" class="form-select form-select-sm">
+      <option value="">All categories</option>
+      {% for value, label in action_choices %}
+        <option value="{{ value }}" {% if action_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+    {% if search or action_filter %}<a href="{% url 'dashboard:audit_logs' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if logs %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th scope="col" class="ps-3">Timestamp</th><th scope="col">User</th><th scope="col">Action</th><th scope="col" class="pe-3">Details</th></tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+            <tr>
+              <td class="ps-3 small text-nowrap">
+                <span class="cell-title">{{ log.timestamp|date:"d M Y" }}</span>
+                <span class="cell-sub d-block">{{ log.timestamp|time:"H:i:s" }}</span>
+              </td>
+              <td>
+                <span class="small fw-semibold">{{ log.user.get_full_name|default:log.user.email|default:"System" }}</span>
+                {% if log.user %}<span class="cell-sub d-block">{{ log.user.email }}</span>{% endif %}
+              </td>
+              <td><span class="badge badge-neutral">{{ log.get_action_display }}</span></td>
+              <td class="pe-3 small muted">{{ log.description }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='shield-check' title='No activity found' text='Records appear as staff and users perform actions.' %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Institution branding · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">EduTrack platform</div>
+    <h1 class="page-title">Institution branding</h1>
+    <p class="page-subtitle">Configure how {{ institution.name }} is identified inside EduTrack. Colours are optional; blank values keep the platform theme.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'institutions:institution_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Institutions</a>
+  </div>
+</div>
+
+<div class="card" style="max-width: 640px;">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="filter-field">
+        <label class="form-label" for="brand-logo-url">Logo image URL</label>
+        <input id="brand-logo-url" type="url" name="logo_url" class="form-control" value="{{ institution.logo_url }}" placeholder="https://">
+        <p class="form-text mt-1">Alternatively, place a file at <code>static/branding/logo-{{ institution.code }}.svg</code>; it is used automatically when this field is empty. The logo is letterboxed in a fixed square area and never distorted.</p>
+      </div>
+
+      <div class="grid mt-2">
+        <div class="col-6">
+          <div class="filter-field">
+            <label class="form-label" for="brand-primary">Primary colour</label>
+            <input id="brand-primary" type="text" name="brand_primary_color" class="form-control" value="{{ institution.brand_primary_color }}" placeholder="#12263F" maxlength="7">
+            <p class="form-text mt-1">Used for the institutional identity accents, as #RRGGBB.</p>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="filter-field">
+            <label class="form-label" for="brand-accent">Accent colour</label>
+            <input id="brand-accent" type="text" name="brand_accent_color" class="form-control" value="{{ institution.brand_accent_color }}" placeholder="#1F5F8B" maxlength="7">
+            <p class="form-text mt-1">Used for small highlight details, as #RRGGBB.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="advisory-notice mt-3">
+        EduTrack remains the platform identity. These settings only add the institution's own logo and colours on top of the shared interface; institutions without branding show the default theme.
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <a href="{% url 'institutions:institution_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save branding</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

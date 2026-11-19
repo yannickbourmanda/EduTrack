@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}New course offering · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic catalogue</div>
+    <h1 class="page-title">Create a course offering</h1>
+    <p class="page-subtitle">Schedule a catalogue course for a semester and assign an instructor.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'academics:offering_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Offerings</a>
+  </div>
+</div>
+
+<div class="card" style="max-width: 760px;">
+  <div class="card-body">
+    {% if not courses or not semesters or not instructors %}
+      {% include 'partials/empty_state.html' with icon='easel' title='Setup incomplete' text='A course, a semester and an approved instructor are required before an offering can be created.' %}
+    {% else %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="filter-field">
+          <label class="form-label" for="offering-course">Course *</label>
+          <select id="offering-course" name="course" class="form-select" required>
+            <option value="">Choose a course</option>
+            {% for course in courses %}
+              <option value="{{ course.id }}">{{ course.code }} — {{ course.title }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label class="form-label" for="offering-semester">Semester *</label>
+          <select id="offering-semester" name="semester" class="form-select" required>
+            <option value="">Choose a semester</option>
+            {% for semester in semesters %}
+              <option value="{{ semester.id }}">{{ semester.session.name }} · {{ semester.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label class="form-label" for="offering-instructor">Instructor *</label>
+          <select id="offering-instructor" name="instructor" class="form-select" required>
+            <option value="">Choose an instructor</option>
+            {% for instructor in instructors %}
+              <option value="{{ instructor.id }}">{{ instructor.get_full_name|default:instructor.email }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text">Only instructors with an approved membership at your institution are listed.</div>
+        </div>
+
+        <div class="filter-field">
+          <label class="form-label" for="offering-syllabus">Syllabus summary</label>
+          <textarea id="offering-syllabus" name="syllabus" class="form-control" rows="3" maxlength="5000"></textarea>
+        </div>
+
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" id="offering-active" name="is_active" checked>
+          <label class="form-check-label" for="offering-active">Offering is active (available for enrolment)</label>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <a href="{% url 'academics:offering_list' %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Create offering</button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

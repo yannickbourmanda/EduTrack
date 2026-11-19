@@ -1,0 +1,109 @@
+{
+  "selected_model": "Random Forest",
+  "provenance": {
+    "dataset": "Synthetic simulation generated at training time by data/train_risk_model.py. No real student records were used.",
+    "validation": "Recorded metrics come from a single train/test split of the synthetic dataset. No cross-validation was used for these figures; values may vary between runs.",
+    "model_selection": "Random Forest was fixed as the deployed artifact at first build and retained, although Logistic Regression scored higher on every recorded metric in this evaluation (including high-risk recall: 0.9915 vs 0.8644).",
+    "real_world_validation": "None. The model has never been evaluated against real institutional data; these metrics do not represent expected real-world performance.",
+    "annotation_note": "This provenance block was hand-annotated without retraining. Artifact files and recorded metric values are unchanged from the original build."
+  },
+  "features": [
+    "attendance_rate",
+    "assessment_avg",
+    "quiz_avg",
+    "midterm_score",
+    "participation_score",
+    "failed_assessments_count",
+    "prior_gpa",
+    "credit_load"
+  ],
+  "target_classes": [
+    "Low Risk",
+    "Moderate Risk",
+    "High Risk"
+  ],
+  "models_evaluation": {
+    "Logistic Regression": {
+      "accuracy": 0.9707,
+      "precision": 0.9718,
+      "recall": 0.9707,
+      "f1_score": 0.9706,
+      "high_risk_recall": 0.9915,
+      "confusion_matrix": [
+        [
+          104,
+          0,
+          0
+        ],
+        [
+          7,
+          143,
+          3
+        ],
+        [
+          0,
+          1,
+          117
+        ]
+      ]
+    },
+    "Decision Tree": {
+      "accuracy": 0.8027,
+      "precision": 0.8096,
+      "recall": 0.8027,
+      "f1_score": 0.804,
+      "high_risk_recall": 0.7797,
+      "confusion_matrix": [
+        [
+          84,
+          20,
+          0
+        ],
+        [
+          16,
+          125,
+          12
+        ],
+        [
+          0,
+          26,
+          92
+        ]
+      ]
+    },
+    "Random Forest": {
+      "accuracy": 0.8587,
+      "precision": 0.8592,
+      "recall": 0.8587,
+      "f1_score": 0.8589,
+      "high_risk_recall": 0.8644,
+      "confusion_matrix": [
+        [
+          92,
+          12,
+          0
+        ],
+        [
+          12,
+          128,
+          13
+        ],
+        [
+          0,
+          16,
+          102
+        ]
+      ]
+    }
+  },
+  "feature_importances": {
+    "attendance_rate": 0.1507,
+    "assessment_avg": 0.194,
+    "quiz_avg": 0.072,
+    "midterm_score": 0.1689,
+    "participation_score": 0.0671,
+    "failed_assessments_count": 0.1578,
+    "prior_gpa": 0.1815,
+    "credit_load": 0.008
+  }
+}

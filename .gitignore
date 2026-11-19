@@ -1,0 +1,34 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+!.env.example
+
+# Local databases and backups must never be versioned: the seeded SQLite file
+# contains demo accounts with a documented password, and backups contain the
+# full data set.
+*.sqlite3
+backups/
+
+# Virtual environments and build output
+.venv/
+venv/
+staticfiles/
+media/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Keep the model required by the prediction service; ignore other local models.
+ml_artifacts/*.joblib
+!ml_artifacts/academic_risk_rf_v1.joblib
+
+# Portable Python used by the local development workflow
+.python-portable*

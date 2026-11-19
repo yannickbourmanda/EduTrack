@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Programmes · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic structure</div>
+    <h1 class="page-title">Programmes</h1>
+    <p class="page-subtitle">Degree programmes configured for {{ institution.name }}, with their departments and credit requirements.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'institutions:structure_create' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-plus-lg"></i> Add programme</a>
+    <a href="{% url 'institutions:structure_view' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-diagram-3"></i> Full structure</a>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="programme-search">Search</label>
+    <input id="programme-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Programme, code or department">
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+    {% if search %}<a href="{% url 'institutions:programmes' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if programmes %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th scope="col" class="ps-3">Programme</th>
+            <th scope="col">Degree</th>
+            <th scope="col">Department</th>
+            <th scope="col">Duration</th>
+            <th scope="col" class="pe-3">Credits required</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for programme in programmes %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ programme.name }}</span>
+                <span class="cell-sub d-block">{{ programme.code }}</span>
+              </td>
+              <td class="small">{{ programme.get_degree_type_display }}</td>
+              <td>
+                <span class="small">{{ programme.department.name }}</span>
+                <span class="cell-sub d-block">{{ programme.department.faculty.name }}</span>
+              </td>
+              <td class="small">{{ programme.duration_years }} year{{ programme.duration_years|pluralize }}</td>
+              <td class="pe-3 small">{{ programme.total_credits_required }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% if search %}
+      {% include 'partials/empty_state.html' with icon='mortarboard' title='No programmes match your search' text='Change the search term or clear the filter.' %}
+    {% elif department_count == 0 %}
+      {% include 'partials/empty_state.html' with icon='diagram-3' title='No departments configured' text='A programme belongs to a department. Create a department first, then add its programmes.' %}
+    {% else %}
+      {% include 'partials/empty_state.html' with icon='mortarboard' title='No programmes configured' text='Use “Add programme” to create the degree programmes for this institution.' %}
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Teaching workspace</div>
+    <h1 class="page-title">Teaching overview</h1>
+    <p class="page-subtitle">Performance across the courses assigned to you.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:instructor_performance' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-bar-chart-line"></i> Performance</a>
+    <a href="{% url 'monitoring:create_assessment' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> New assessment</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat">
+    <div class="stat-label">Assigned courses</div>
+    <div class="stat-value">{{ offerings|length }}</div>
+    <div class="stat-hint">Course offerings assigned to you</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Students</div>
+    <div class="stat-value">{{ student_count }}</div>
+    <div class="stat-hint">{{ enrollment_count }} active enrolment{{ enrollment_count|pluralize }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Average performance</div>
+    <div class="stat-value {% if average is not None and average < 50 %}is-danger{% endif %}">
+      {% if average is not None %}{{ average }}%{% else %}—{% endif %}
+    </div>
+    <div class="stat-hint">
+      {% if scored_enrollments %}{{ scored_enrollments }} recorded course result{{ scored_enrollments|pluralize }}{% else %}No scores recorded yet{% endif %}
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Attendance</div>
+    <div class="stat-value {% if attendance_overall.rate is not None and attendance_overall.rate < 75 %}is-danger{% elif attendance_overall.rate is not None %}is-success{% endif %}">
+      {% if attendance_overall.rate is not None %}{{ attendance_overall.rate }}%{% else %}—{% endif %}
+    </div>
+    <div class="stat-hint">
+      {% if attendance_overall.total %}{{ attendance_overall.total }} attendance entries{% else %}No attendance recorded{% endif %}
+    </div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="grid dashboard-layout">
+    <div class="col-6">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h2 class="section-title">Average by course</h2>
+          <p class="section-note">Recorded performance across your assigned courses.</p>
+        </div>
+        <div class="card-body">
+          {% if offerings %}
+            <div class="chart-wrap"><canvas id="courseAverageChart" role="img" aria-label="Bar chart of average performance by course"></canvas></div>
+            <p class="chart-caption">Only courses with recorded scores contribute to the average.</p>
+            {% include 'partials/chart_data_table.html' with chart_data_columns=course_performance.labels chart_data_values=course_performance.values chart_data_caption='Average performance by course' chart_data_series_name='Average performance' chart_data_suffix='%' %}
+          {% else %}
+            {% include 'partials/empty_state.html' with icon='easel' title='No assigned courses' text='Course offerings assigned to you will appear here.' %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h2 class="section-title">Score distribution</h2>
+          <p class="section-note">Recorded scores grouped into score bands.</p>
+        </div>
+        <div class="card-body">
+          {% if grade_distribution.total %}
+            <div class="chart-wrap"><canvas id="gradeDistributionChart" role="img" aria-label="Bar chart of score bands"></canvas></div>
+            <p class="chart-caption">Score bands are derived from recorded percentages; they are not official grade classifications.</p>
+            {% include 'partials/chart_data_table.html' with chart_data_columns=grade_distribution.labels chart_data_values=grade_distribution.values chart_data_caption='Recorded scores by score band' chart_data_series_name='Recorded results' %}
+          {% else %}
+            {% include 'partials/empty_state.html' with icon='bar-chart' title='No recorded scores' text='Distribution appears when assessments are graded.' %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h2 class="section-title">Assessment performance</h2>
+          <p class="section-note">Average percentage per assessment, with participation.</p>
+        </div>
+        <div class="card-body">
+          {% if assessment_performance.labels %}
+            <div class="chart-wrap"><canvas id="assessmentPerformanceChart" role="img" aria-label="Bar chart of average assessment scores"></canvas></div>
+            <p class="chart-caption">Participation counts how many enrolled students were scored per assessment.</p>
+            <details class="chart-fallback">
+              <summary>Data table · average score and participation per assessment</summary>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                  <caption class="visually-hidden">Average score and participation per assessment — text alternative to the chart above.</caption>
+                  <thead>
+                    <tr><th scope="col">Assessment</th><th scope="col">Average score</th><th scope="col">Participation</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for row in assessment_performance.table_rows %}
+                      <tr>
+                        <th scope="row">{{ row.label }}</th>
+                        <td>{% if row.average != None %}{{ row.average }}%{% else %}No recorded data{% endif %}</td>
+                        <td>{{ row.participation }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          {% else %}
+            {% include 'partials/empty_state.html' with icon='clipboard2-data' title='No assessment results' text='Results appear after you grade an assessment.' %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h2 class="section-title">Attendance trend</h2>
+          <p class="section-note">Attendance rate on recorded class dates.</p>
+        </div>
+        <div class="card-body">
+          {% if attendance_trend %}
+            <div class="chart-wrap"><canvas id="attendanceTrendChart" role="img" aria-label="Line chart of attendance by class date"></canvas></div>
+            {% include 'partials/chart_data_table.html' with chart_data_rows=attendance_trend chart_data_caption='Attendance by class date' chart_data_value_header='Attendance (%)' chart_data_suffix='%' %}
+          {% else %}
+            {% include 'partials/empty_state.html' with icon='calendar-x' title='No attendance records' text='Record a class session to start tracking attendance.' %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="grid dashboard-layout">
+    <div class="col-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h2 class="section-title">Students needing attention</h2>
+            <p class="section-note">
+              Your enrolled students below the documented thresholds:
+              performance under 50% or attendance under 75%.
+            </p>
+          </div>
+          <a href="{% url 'dashboard:instructor_students' %}" class="small">Student list</a>
+        </div>
+        {% if attention_rows %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr>
+                  <th scope="col" class="ps-3">Student</th>
+                  <th scope="col">Performance</th>
+                  <th scope="col">Attendance</th>
+                  <th scope="col" class="pe-3">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in attention_rows %}
+                  <tr>
+                    <td class="ps-3">
+                      <span class="cell-title">{{ row.student.get_full_name|default:row.student.email }}</span>
+                      <span class="cell-sub d-block">{{ row.student.matriculation_number|default:"No matric number" }}</span>
+                    </td>
+                    <td>
+                      {% if row.average is not None %}
+                        <span class="fw-semibold">{{ row.average }}%</span>
+                      {% else %}
+                        <span class="muted small">No scores yet</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if row.attendance_rate is not None %}
+                        {{ row.attendance_rate }}%
+                      {% else %}
+                        <span class="muted small">No records</span>
+                      {% endif %}
+                    </td>
+                    <td class="pe-3">
+                      {% if row.low_performance %}<span class="badge badge-high-risk">Performance below 50%</span>{% endif %}
+                      {% if row.low_attendance %}<span class="badge badge-medium-risk">Attendance below 75%</span>{% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="section-note px-3 pb-3">
+            These figures summarise recorded results and attendance across the classes you teach. They do not label a student or a course; use the authorised student list to review individual records.
+          </p>
+        {% else %}
+          {% if student_count %}
+            {% include 'partials/empty_state.html' with icon='shield-check' title='No students below the thresholds' text='None of your enrolled students is currently below the performance or attendance thresholds.' %}
+          {% else %}
+            {% include 'partials/empty_state.html' with icon='people' title='No students enrolled yet' text='Attention summaries appear once students are enrolled in your courses.' %}
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="col-4">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="section-title">Attention summary</h2>
+        </div>
+        <div class="card-body">
+          <dl class="mb-0">
+            <div class="data-pair"><dt>Students below thresholds</dt><dd>{{ attention_count }}</dd></div>
+            <div class="data-pair"><dt>Low performance</dt><dd>{{ low_performance_count }}</dd></div>
+            <div class="data-pair"><dt>Low attendance</dt><dd>{{ low_attendance_count }}</dd></div>
+          </dl>
+          <div class="advisory-notice mt-3">
+            Thresholds: performance under 50%, attendance under 75% — the same cut-offs used on the course standing badges. Small classes and sparse records can skew class averages; interpret them together with class size and assessment coverage.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="grid">
+  <div class="col-8">
+    <section class="section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="section-title">Assigned courses</h2>
+          <p class="section-note">Only courses assigned to you are listed.</p>
+        </div>
+        {% if offering_rows %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr>
+                  <th scope="col" class="ps-3">Course</th>
+                  <th scope="col">Semester</th>
+                  <th scope="col">Students</th>
+                  <th scope="col">Assessments</th>
+                  <th scope="col">Sessions</th>
+                  <th scope="col">Average</th>
+                  <th scope="col" class="text-end pe-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in offering_rows %}
+                  <tr>
+                    <td class="ps-3">
+                      <span class="cell-title">{{ row.offering.course.code }}</span>
+                      <span class="cell-sub d-block">{{ row.offering.course.title|truncatechars:38 }}</span>
+                    </td>
+                    <td><span class="small">{{ row.offering.semester.name }}</span></td>
+                    <td>{{ row.enrolled_count }}</td>
+                    <td>{{ row.assessments_count }}</td>
+                    <td>{{ row.sessions_count }}</td>
+                    <td>
+                      {% if row.average is not None %}
+                        <span class="fw-semibold">{{ row.average }}%</span>
+                      {% else %}
+                        <span class="muted small">—</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-end pe-3">
+                      <div class="inline-actions">
+                        <a href="{% url 'monitoring:enter_scores' row.offering.id %}" class="btn btn-sm btn-outline-secondary">Scores</a>
+                        <a href="{% url 'monitoring:record_attendance' row.offering.id %}" class="btn btn-sm btn-outline-secondary">Attendance</a>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='journal-x' title='No courses assigned' text='Contact your institution administrator if a course assignment is missing.' %}
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  <div class="col-4">
+    <section class="section">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h2 class="section-title">Recent assessments</h2>
+          <a href="{% url 'monitoring:assessment_management' %}" class="small">All</a>
+        </div>
+        {% if recent_assessments %}
+          <ul class="list-clean">
+            {% for assessment in recent_assessments %}
+              <li class="list-row">
+                <div>
+                  <div class="list-title">{{ assessment.title }}</div>
+                  <div class="list-meta">{{ assessment.course_offering.course.code }} · {{ assessment.get_assessment_type_display }}</div>
+                </div>
+                <a href="{% url 'monitoring:grade_assessment' assessment.id %}" class="btn btn-sm btn-outline-secondary">Grade</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='clipboard-x' title='No assessments' text='Create an assessment to begin grading.' %}
+        {% endif %}
+      </div>
+    </section>
+  </div>
+</div>
+
+{{ course_performance|json_script:"course-performance-data" }}
+{{ grade_distribution|json_script:"grade-distribution-data" }}
+{{ assessment_performance|json_script:"assessment-performance-data" }}
+{{ attendance_trend|json_script:"attendance-trend-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    var palette = window.EduTrackCharts.palette;
+    if (document.getElementById('courseAverageChart')) {
+      var courseData = JSON.parse(document.getElementById('course-performance-data').textContent);
+      window.EduTrackCharts.bar('courseAverageChart', courseData.labels, [
+        { label: 'Average performance', data: courseData.values, backgroundColor: palette.primary, borderRadius: 3 }
+      ]);
+    }
+
+    if (document.getElementById('gradeDistributionChart')) {
+      var gradeData = JSON.parse(document.getElementById('grade-distribution-data').textContent);
+      window.EduTrackCharts.bar('gradeDistributionChart', gradeData.labels, [
+        { label: 'Students', data: gradeData.values, backgroundColor: gradeData.colors, borderRadius: 3 }
+      ], {
+        scales: { y: { beginAtZero: true, max: undefined, ticks: { callback: function (value) { return value; } }, title: { display: true, text: 'Recorded results' } } },
+        plugins: { tooltip: { callbacks: { label: function (context) { return context.parsed.y + ' recorded result(s)'; } } } }
+      });
+    }
+
+    if (document.getElementById('assessmentPerformanceChart')) {
+      var assessmentData = JSON.parse(document.getElementById('assessment-performance-data').textContent);
+      window.EduTrackCharts.bar('assessmentPerformanceChart', assessmentData.labels, [
+        { label: 'Average score', data: assessmentData.values, backgroundColor: palette.success, borderRadius: 3 }
+      ]);
+    }
+
+    if (document.getElementById('attendanceTrendChart')) {
+      var attendanceData = JSON.parse(document.getElementById('attendance-trend-data').textContent);
+      window.EduTrackCharts.line('attendanceTrendChart', attendanceData.map(function (row) { return row.label; }), [
+        { label: 'Attendance', data: attendanceData.map(function (row) { return row.value; }), borderColor: palette.warning, backgroundColor: palette.warningFill, fill: true }
+      ]);
+    }
+  })();
+</script>
+{% endblock %}

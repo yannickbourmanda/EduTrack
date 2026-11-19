@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Assessments · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Teaching workspace</div>
+    <h1 class="page-title">Assessments</h1>
+    <p class="page-subtitle">Assessments for the courses assigned to you.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'monitoring:create_assessment' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> New assessment</a>
+  </div>
+</div>
+
+<div class="card">
+  {% if assessments %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th scope="col" class="ps-3">Assessment</th><th scope="col">Course</th><th scope="col">Type</th><th scope="col">Maximum</th><th scope="col">Weight</th><th scope="col">Due date</th><th scope="col">Graded</th><th scope="col" class="text-end pe-3">Action</th></tr>
+        </thead>
+        <tbody>
+          {% for assessment in assessments %}
+            <tr>
+              <td class="ps-3"><span class="cell-title">{{ assessment.title }}</span></td>
+              <td>
+                <span class="fw-semibold">{{ assessment.course_offering.course.code }}</span>
+                <span class="cell-sub d-block">{{ assessment.course_offering.semester.name }}</span>
+              </td>
+              <td class="small">{{ assessment.get_assessment_type_display }}</td>
+              <td class="small">{{ assessment.max_score }}</td>
+              <td class="small">{{ assessment.weight_percentage }}%</td>
+              <td class="small muted">{{ assessment.due_date|date:"d M Y"|default:"Not set" }}</td>
+              <td><span class="badge badge-neutral">{{ assessment.results.count }} graded</span></td>
+              <td class="text-end pe-3">
+                <a href="{% url 'monitoring:grade_assessment' assessment.id %}" class="btn btn-sm btn-outline-secondary">Enter scores</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='clipboard-x' title='No assessments yet' text='Create an assessment for one of your assigned courses.' %}
+  {% endif %}
+</div>
+{% endblock %}

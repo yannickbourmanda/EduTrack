@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Create assessment · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Teaching workspace</div>
+    <h1 class="page-title">Create assessment</h1>
+    <p class="page-subtitle">Only courses assigned to you are available.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'monitoring:assessment_management' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Assessments</a>
+  </div>
+</div>
+
+<div class="card" style="max-width: 720px;">
+  <div class="card-body">
+    {% if not offerings %}
+      {% include 'partials/empty_state.html' with icon='easel' title='No active courses assigned' text='You cannot create assessments until a course is assigned to you.' %}
+    {% else %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="filter-field">
+          <label class="form-label" for="assessment-offering">Course offering *</label>
+          <select id="assessment-offering" name="course_offering" class="form-select" required>
+            {% for offering in offerings %}
+              <option value="{{ offering.id }}">{{ offering.course.code }} · {{ offering.course.title }} ({{ offering.semester.name }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label class="form-label" for="assessment-title">Title *</label>
+          <input id="assessment-title" type="text" name="title" class="form-control" placeholder="e.g. Midterm examination" maxlength="255" required>
+        </div>
+
+        <div class="grid">
+          <div class="col-6">
+            <div class="filter-field">
+              <label class="form-label" for="assessment-type">Type *</label>
+              <select id="assessment-type" name="assessment_type" class="form-select">
+                {% for value, label in assessment_types %}
+                  <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="filter-field">
+              <label class="form-label" for="assessment-due">Due date</label>
+              <input id="assessment-due" type="date" name="due_date" class="form-control">
+            </div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="col-6">
+            <div class="filter-field">
+              <label class="form-label" for="assessment-max">Maximum score *</label>
+              <input id="assessment-max" type="number" step="0.5" min="0.5" name="max_score" class="form-control" value="100" required>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="filter-field">
+              <label class="form-label" for="assessment-weight">Weight (%) *</label>
+              <input id="assessment-weight" type="number" step="0.5" min="0" max="100" name="weight_percentage" class="form-control" value="20" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <a href="{% url 'monitoring:assessment_management' %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Create and grade</button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

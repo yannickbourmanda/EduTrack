@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Institutions · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">EduTrack platform</div>
+    <h1 class="page-title">Institutions</h1>
+    <p class="page-subtitle">Register, activate and suspend institution accounts. No academic records are shown here.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'institutions:institution_requests' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-inbox"></i> Requests</a>
+    <a href="{% url 'institutions:institution_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Register institution</a>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="institution-search">Search</label>
+    <input id="institution-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Name, code or contact email">
+  </div>
+  <div class="filter-field">
+    <label for="institution-status">Status</label>
+    <select id="institution-status" name="status" class="form-select form-select-sm">
+      <option value="">All statuses</option>
+      <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+      <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Inactive</option>
+    </select>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+    {% if search or status_filter %}<a href="{% url 'institutions:institution_list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if institutions %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th scope="col" class="ps-3">Institution</th>
+            <th scope="col">Code</th>
+            <th scope="col">Contact</th>
+            <th scope="col">Approved members</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="text-end pe-3">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for institution in institutions %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ institution.name }}</span>
+                <span class="cell-sub d-block">Registered {{ institution.created_at|date:"d M Y" }}</span>
+              </td>
+              <td><span class="badge badge-neutral">{{ institution.code }}</span></td>
+              <td class="small muted">{{ institution.contact_email }}</td>
+              <td class="small">{{ institution.member_count }}</td>
+              <td>
+                {% if institution.is_active %}
+                  <span class="badge badge-low-risk">Active</span>
+                {% else %}
+                  <span class="badge badge-medium-risk">Inactive</span>
+                {% endif %}
+              </td>
+              <td class="text-end pe-3">
+                <a href="{% url 'institutions:institution_branding' institution.id %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-palette"></i> Branding</a>
+                {% if institution.admin_count == 0 %}
+                  <a href="{% url 'institutions:appoint_admin' institution.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-person-plus"></i> Appoint administrator</a>
+                {% endif %}
+                <form method="post" action="{% url 'institutions:institution_toggle' institution.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="/institutions/">
+                  {% if institution.is_active %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Suspend</button>
+                  {% else %}
+                    <button type="submit" class="btn btn-sm btn-success">Activate</button>
+                  {% endif %}
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='buildings' title='No institutions found' text='Register an institution or change the current filters.' %}
+  {% endif %}
+</div>
+{% endblock %}

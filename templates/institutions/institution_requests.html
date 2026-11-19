@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Institution requests · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">EduTrack platform</div>
+    <h1 class="page-title">Institution requests</h1>
+    <p class="page-subtitle">Inactive institution accounts awaiting activation by the platform administrator.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'institutions:institution_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> All institutions</a>
+  </div>
+</div>
+
+<div class="card">
+  {% if institutions %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th scope="col" class="ps-3">Institution</th><th scope="col">Code</th><th scope="col">Contact</th><th scope="col">Members</th><th scope="col" class="text-end pe-3">Decision</th></tr>
+        </thead>
+        <tbody>
+          {% for institution in institutions %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ institution.name }}</span>
+                <span class="cell-sub d-block">Requested {{ institution.created_at|date:"d M Y" }}</span>
+              </td>
+              <td><span class="badge badge-neutral">{{ institution.code }}</span></td>
+              <td class="small muted">{{ institution.contact_email }}</td>
+              <td class="small">{{ institution.member_count }}</td>
+              <td class="text-end pe-3">
+                <form method="post" action="{% url 'institutions:institution_toggle' institution.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="/institutions/requests/">
+                  <button type="submit" class="btn btn-sm btn-success">Activate institution</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='check2-all' title='No pending institution requests' text='All registered institutions are active.' %}
+  {% endif %}
+</div>
+{% endblock %}

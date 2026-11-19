@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Record attendance · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ offering.course.code }} · {{ offering.semester.name }}</div>
+    <h1 class="page-title">Record attendance</h1>
+    <p class="page-subtitle">{{ offering.course.title }}</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'monitoring:attendance_overview' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Attendance</a>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="col-8">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="section-title">Lecture attendance sheet</h2>
+        <p class="section-note">Submitting again for the same date updates that session's records.</p>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="grid">
+            <div class="col-5">
+              <div class="filter-field">
+                <label class="form-label" for="attendance-date">Lecture date *</label>
+                <input id="attendance-date" type="date" name="session_date" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+              </div>
+            </div>
+            <div class="col-7">
+              <div class="filter-field">
+                <label class="form-label" for="attendance-topic">Session topic</label>
+                <input id="attendance-topic" type="text" name="topic" class="form-control" maxlength="255" placeholder="e.g. Encapsulation in practice">
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr><th scope="col" class="ps-3">Student</th><th scope="col">Status</th><th scope="col">Participation</th><th scope="col" class="pe-3">Notes</th></tr>
+              </thead>
+              <tbody>
+                {% for enrollment in enrollments %}
+                  <tr>
+                    <td class="ps-3">
+                      <span class="cell-title">{{ enrollment.student.get_full_name|default:enrollment.student.email }}</span>
+                      <span class="cell-sub d-block">{{ enrollment.student.matriculation_number|default:enrollment.student.email }}</span>
+                    </td>
+                    <td>
+                      <select name="status_{{ enrollment.student.id }}" class="form-select form-select-sm">
+                        {% for value, label in attendance_statuses %}
+                          <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </td>
+                    <td>
+                      <select name="part_{{ enrollment.student.id }}" class="form-select form-select-sm" style="max-width: 150px;">
+                        <option value="5">5 · Outstanding</option>
+                        <option value="4">4 · Engaged</option>
+                        <option value="3" selected>3 · Active</option>
+                        <option value="2">2 · Passive</option>
+                        <option value="1">1 · Minimal</option>
+                      </select>
+                    </td>
+                    <td class="pe-3">
+                      <input type="text" name="notes_{{ enrollment.student.id }}" class="form-control form-control-sm" maxlength="255" placeholder="Optional note">
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="4" class="text-center py-4 muted small">No active students are enrolled in this course.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary">Submit attendance</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="section-title">Recent sessions</h2>
+      </div>
+      {% if past_sessions %}
+        <ul class="list-clean">
+          {% for session in past_sessions %}
+            <li class="list-row">
+              <div>
+                <div class="list-title">{{ session.session_date|date:"d M Y" }}</div>
+                <div class="list-meta">{{ session.topic|default:"Regular lecture" }}</div>
+              </div>
+              <span class="badge badge-neutral">{{ session.attendance_records.count }} marked</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        {% include 'partials/empty_state.html' with icon='calendar-x' title='No sessions recorded' %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

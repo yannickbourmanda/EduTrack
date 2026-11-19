@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}Progress monitoring · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic advising</div>
+    <h1 class="page-title">Progress monitoring</h1>
+    <p class="page-subtitle">Performance, attendance and advisory status for your assigned students.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:adviser' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat">
+    <div class="stat-label">Assigned students</div>
+    <div class="stat-value">{{ analytics.student_count }}</div>
+    <div class="stat-hint">Active assignments</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Average performance</div>
+    <div class="stat-value">{% with latest=analytics.performance_trend|last %}{% if latest %}{{ latest.value }}%{% else %}—{% endif %}{% endwith %}</div>
+    <div class="stat-hint">Most recent semester with recorded results</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Attendance</div>
+    <div class="stat-value">{% if analytics.attendance_overall.rate is not None %}{{ analytics.attendance_overall.rate }}%{% else %}—{% endif %}</div>
+    <div class="stat-hint">{{ analytics.attendance_overall.total }} attendance entries</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">High risk</div>
+    <div class="stat-value is-danger">{{ analytics.high_risk_count }}</div>
+    <div class="stat-hint">Advisory estimate</div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="col-6">
+    <div class="card chart-card">
+      <div class="card-header">
+        <h2 class="section-title">Cohort performance trend</h2>
+        <p class="section-note">Average recorded performance by semester.</p>
+      </div>
+      <div class="card-body">
+        {% if analytics.performance_trend %}
+          <div class="chart-wrap"><canvas id="performanceTrendChart" role="img" aria-label="Line chart of cohort performance"></canvas></div>
+          {% include 'partials/chart_data_table.html' with chart_data_rows=analytics.performance_trend chart_data_caption='Average performance of assigned students by semester' chart_data_value_header='Average performance (%)' chart_data_suffix='%' %}
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='graph-up' title='No trend data' %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-6">
+    <div class="card chart-card">
+      <div class="card-header">
+        <h2 class="section-title">Cohort attendance trend</h2>
+        <p class="section-note">Attendance percentage by semester.</p>
+      </div>
+      <div class="card-body">
+        {% if analytics.attendance_trend %}
+          <div class="chart-wrap"><canvas id="attendanceTrendChart" role="img" aria-label="Line chart of cohort attendance"></canvas></div>
+          {% include 'partials/chart_data_table.html' with chart_data_rows=analytics.attendance_trend chart_data_caption='Attendance of assigned students by semester' chart_data_value_header='Attendance (%)' chart_data_suffix='%' %}
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='calendar-x' title='No attendance records' %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="get" class="filter-bar mt-3" role="search">
+  <div class="filter-field">
+    <label for="progress-search">Search assigned students</label>
+    <input id="progress-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Name, email or matric number">
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Search</button>
+    {% if search %}<a href="{% url 'dashboard:adviser_progress' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if student_rows %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th scope="col" class="ps-3">Student</th>
+            <th scope="col">Performance</th>
+            <th scope="col">Attendance</th>
+            <th scope="col">Predicted risk</th>
+            <th scope="col">Indicators</th>
+            <th scope="col" class="text-end pe-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in student_rows %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ row.student.get_full_name|default:row.student.email }}</span>
+                <span class="cell-sub d-block">{{ row.student.matriculation_number|default:"No matric number" }}</span>
+              </td>
+              <td>{% if row.average is not None %}{{ row.average }}%{% else %}<span class="muted small">No results</span>{% endif %}</td>
+              <td>{% if row.attendance_rate is not None %}{{ row.attendance_rate }}%{% else %}<span class="muted small">No records</span>{% endif %}</td>
+              <td>
+                {% if row.prediction %}
+                  <span class="badge {% if row.prediction.risk_level == 'HIGH' %}badge-high-risk{% elif row.prediction.risk_level == 'MEDIUM' %}badge-medium-risk{% else %}badge-low-risk{% endif %}">{{ row.prediction.get_risk_level_display }}</span>
+                {% else %}
+                  <span class="badge badge-neutral">No estimate</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="small muted">
+                  {% if row.prediction %}{% for factor in row.prediction.contributing_factors|slice:":1" %}{{ factor }}{% empty %}No negative indicators.{% endfor %}{% else %}—{% endif %}
+                </span>
+              </td>
+              <td class="text-end pe-3">
+                <div class="inline-actions">
+                  <a href="{% url 'advising:create_intervention_for_student' row.student.id %}" class="btn btn-sm btn-outline-secondary">Intervene</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='people' title='No assigned students' text='Students assigned to you will appear here.' %}
+  {% endif %}
+</div>
+
+{{ analytics.performance_trend|json_script:"performance-trend-data" }}
+{{ analytics.attendance_trend|json_script:"attendance-trend-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    var palette = window.EduTrackCharts.palette;
+    if (document.getElementById('performanceTrendChart')) {
+      var trend = JSON.parse(document.getElementById('performance-trend-data').textContent);
+      window.EduTrackCharts.line('performanceTrendChart', trend.map(function (row) { return row.label; }), [
+        { label: 'Average performance', data: trend.map(function (row) { return row.value; }), borderColor: palette.primary, backgroundColor: palette.primaryFill, fill: true }
+      ]);
+    }
+    if (document.getElementById('attendanceTrendChart')) {
+      var attendance = JSON.parse(document.getElementById('attendance-trend-data').textContent);
+      window.EduTrackCharts.line('attendanceTrendChart', attendance.map(function (row) { return row.label; }), [
+        { label: 'Attendance', data: attendance.map(function (row) { return row.value; }), borderColor: palette.warning, backgroundColor: palette.warningFill, fill: true }
+      ]);
+    }
+  })();
+</script>
+{% endblock %}

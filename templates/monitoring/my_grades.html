@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}My results · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Student record</div>
+    <h1 class="page-title">My assessment results</h1>
+    <p class="page-subtitle">Scores recorded by your lecturers, newest first.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:student' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+  </div>
+</div>
+
+<div class="card">
+  {% if results %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th scope="col" class="ps-3">Course</th><th scope="col">Assessment</th><th scope="col">Type</th><th scope="col">Score</th><th scope="col">Percentage</th><th scope="col">Graded</th><th scope="col" class="pe-3">Feedback</th></tr>
+        </thead>
+        <tbody>
+          {% for result in results %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ result.assessment.course_offering.course.code }}</span>
+                <span class="cell-sub d-block">{{ result.assessment.course_offering.course.title|truncatechars:28 }}</span>
+              </td>
+              <td class="small">{{ result.assessment.title }}</td>
+              <td class="small">{{ result.assessment.get_assessment_type_display }}</td>
+              <td><span class="fw-semibold">{{ result.score }} / {{ result.assessment.max_score }}</span></td>
+              <td>
+                <span class="badge {% if result.percentage >= 70 %}badge-low-risk{% elif result.percentage >= 50 %}badge-medium-risk{% else %}badge-high-risk{% endif %}">{{ result.percentage }}%</span>
+              </td>
+              <td class="small muted">{{ result.graded_at|date:"d M Y" }}</td>
+              <td class="pe-3 small muted">{{ result.feedback|default:"No written feedback." }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='clipboard-x' title='No results yet' text='Assessment scores appear once your lecturers publish them.' %}
+  {% endif %}
+</div>
+{% endblock %}

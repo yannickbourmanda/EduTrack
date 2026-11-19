@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Interventions · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic advising</div>
+    <h1 class="page-title">Interventions</h1>
+    <p class="page-subtitle">Consultations and action plans you have recorded.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'advising:create_intervention' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Log intervention</a>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="intervention-status">Status</label>
+    <select id="intervention-status" name="status" class="form-select form-select-sm">
+      <option value="">All statuses</option>
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+    {% if status_filter %}<a href="{% url 'advising:intervention_list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if interventions %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th scope="col" class="ps-3">Student</th><th scope="col">Type</th><th scope="col">Conducted</th><th scope="col">Reason</th><th scope="col">Follow-up</th><th scope="col">Status</th><th scope="col" class="text-end pe-3">Action</th></tr>
+        </thead>
+        <tbody>
+          {% for intervention in interventions %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ intervention.student.get_full_name|default:intervention.student.email }}</span>
+                <span class="cell-sub d-block">{{ intervention.student.matriculation_number|default:intervention.student.email }}</span>
+              </td>
+              <td class="small">{{ intervention.get_intervention_type_display }}</td>
+              <td class="small muted">{{ intervention.date_conducted|date:"d M Y" }}</td>
+              <td class="small muted">{{ intervention.reason|truncatechars:56 }}</td>
+              <td class="small">{{ intervention.follow_up_date|date:"d M Y"|default:"Not set" }}</td>
+              <td>
+                <span class="badge {% if intervention.status == 'RESOLVED' %}badge-low-risk{% elif intervention.status == 'IN_PROGRESS' %}badge-medium-risk{% else %}badge-neutral{% endif %}">
+                  {{ intervention.get_status_display }}
+                </span>
+              </td>
+              <td class="text-end pe-3">
+                <a href="{% url 'advising:intervention_detail' intervention.id %}" class="btn btn-sm btn-outline-secondary">Open</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='journal-plus' title='No interventions recorded' text='Interventions you log for assigned students appear here.' %}
+  {% endif %}
+</div>
+{% endblock %}

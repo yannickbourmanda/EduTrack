@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Enrol student · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Registrar's office</div>
+    <h1 class="page-title">Enrol a student</h1>
+    <p class="page-subtitle">Register one of the students of {{ institution.name }} into an active course offering.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'academics:enrollment_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Enrolments</a>
+  </div>
+</div>
+
+<div class="card" style="max-width: 720px;">
+  <div class="card-body">
+    {% if not students or not offerings %}
+      {% include 'partials/empty_state.html' with icon='person-plus' title='Setup incomplete' text='An approved student and an active course offering are required before an enrolment can be recorded.' %}
+    {% else %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="filter-field">
+          <label class="form-label" for="enrolment-student">Student *</label>
+          <select id="enrolment-student" name="student" class="form-select" required>
+            <option value="">Choose a student</option>
+            {% for student in students %}
+              <option value="{{ student.id }}">{{ student.get_full_name|default:student.email }} ({{ student.matriculation_number|default:student.email }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-field">
+          <label class="form-label" for="enrolment-offering">Course offering *</label>
+          <select id="enrolment-offering" name="course_offering" class="form-select" required>
+            <option value="">Choose an offering</option>
+            {% for offering in offerings %}
+              <option value="{{ offering.id }}">{{ offering.course.code }} — {{ offering.course.title }} ({{ offering.semester.name }})</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <a href="{% url 'academics:enrollment_list' %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Enrol student</button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

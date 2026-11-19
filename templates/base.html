@@ -1,0 +1,312 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}EduTrack{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
+  <link rel="stylesheet" href="{% static 'css/edutrack.css' %}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="{% if not user.is_authenticated or not active_membership and not is_platform_admin %}public-body{% endif %}">
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+{% if user.is_authenticated and active_membership or is_platform_admin %}
+<div class="app-shell" {% if institution_branding.primary or institution_branding.accent %}style="{% if institution_branding.primary %}--inst-primary: {{ institution_branding.primary }};{% endif %} {% if institution_branding.accent %}--inst-accent: {{ institution_branding.accent }};{% endif %}"{% endif %}>
+  <aside class="offcanvas-lg offcanvas-start app-sidebar" tabindex="-1" id="appSidebar" aria-label="Main navigation">
+    <div class="sidebar-head">
+      <a href="{% url 'dashboard:home' %}" class="brand">
+        <span class="brand-mark" aria-hidden="true"><i class="bi bi-mortarboard-fill"></i></span>
+        <span class="brand-text">EduTrack</span>
+      </a>
+      <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#appSidebar" aria-label="Close navigation"></button>
+    </div>
+
+    <div class="tenant-card">
+      {% if is_platform_admin %}
+        <div class="tenant-label">Platform administration</div>
+        <div class="tenant-name">All institutions</div>
+      {% else %}
+        <div class="tenant-identity">
+          {% if institution_branding.logo_url %}
+            <img class="tenant-logo" src="{{ institution_branding.logo_url }}" alt="{{ active_institution.name|default:"Institution" }} logo">
+          {% else %}
+            <span class="tenant-logo tenant-logo-fallback" aria-hidden="true">{{ institution_branding.monogram|default:"ET" }}</span>
+          {% endif %}
+          <div class="tenant-copy">
+            <div class="tenant-label">Institution</div>
+            <div class="tenant-name">{{ active_institution.name|default:"No active institution" }}</div>
+            {% if active_institution %}<div class="tenant-meta">{{ active_institution.code }}</div>{% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    {% with app=request.resolver_match.app_name name=request.resolver_match.url_name %}
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Workspace</div>
+
+        {% if is_platform_admin %}
+          <a class="side-link {% if app == 'dashboard' and name == 'platform_admin' %}active{% endif %}" href="{% url 'dashboard:platform_admin' %}">
+            <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
+          </a>
+          <a class="side-link {% if app == 'institutions' and name == 'institution_list' %}active{% endif %}" href="{% url 'institutions:institution_list' %}">
+            <i class="bi bi-buildings"></i><span>Institutions</span>
+          </a>
+          <a class="side-link {% if app == 'institutions' and name == 'institution_requests' %}active{% endif %}" href="{% url 'institutions:institution_requests' %}">
+            <i class="bi bi-inbox"></i><span>Institution Requests</span>
+          </a>
+          <a class="side-link {% if app == 'dashboard' and name == 'platform_users' %}active{% endif %}" href="{% url 'dashboard:platform_users' %}">
+            <i class="bi bi-people"></i><span>Platform Users</span>
+          </a>
+          <a class="side-link {% if app == 'dashboard' and name == 'platform_activity' %}active{% endif %}" href="{% url 'dashboard:platform_activity' %}">
+            <i class="bi bi-activity"></i><span>System Activity</span>
+          </a>
+
+        {% elif user_role == 'STUDENT' %}
+          <a class="side-link {% if app == 'dashboard' and name == 'student' %}active{% endif %}" href="{% url 'dashboard:student' %}">
+            <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
+          </a>
+          <a class="side-link {% if app == 'academics' and name == 'my_courses' %}active{% endif %}" href="{% url 'academics:my_courses' %}">
+            <i class="bi bi-journal-bookmark"></i><span>My Courses</span>
+          </a>
+          <a class="side-link {% if app == 'monitoring' and name == 'my_grades' %}active{% endif %}" href="{% url 'monitoring:my_grades' %}">
+            <i class="bi bi-clipboard2-data"></i><span>Results</span>
+          </a>
+          <a class="side-link {% if app == 'monitoring' and name == 'my_attendance' %}active{% endif %}" href="{% url 'monitoring:my_attendance' %}">
+            <i class="bi bi-calendar-check"></i><span>Attendance</span>
+          </a>
+          <a class="side-link {% if app == 'dashboard' and name == 'student_progress' %}active{% endif %}" href="{% url 'dashboard:student_progress' %}">
+            <i class="bi bi-graph-up"></i><span>Academic Progress</span>
+          </a>
+          <a class="side-link {% if app == 'predictions' and name == 'my_risk' %}active{% endif %}" href="{% url 'predictions:my_risk' %}">
+            <i class="bi bi-bell"></i><span>Academic Alerts</span>
+          </a>
+
+        {% elif user_role == 'INSTRUCTOR' %}
+          <a class="side-link {% if app == 'dashboard' and name == 'instructor' %}active{% endif %}" href="{% url 'dashboard:instructor' %}">
+            <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
+          </a>
+          <a class="side-link {% if app == 'academics' and name == 'instructor_courses' %}active{% endif %}" href="{% url 'academics:instructor_courses' %}">
+            <i class="bi bi-journal-bookmark"></i><span>My Courses</span>
+          </a>
+          <a class="side-link {% if app == 'dashboard' and name == 'instructor_students' %}active{% endif %}" href="{% url 'dashboard:instructor_students' %}">
+            <i class="bi bi-people"></i><span>Students</span>
+          </a>
+          <a class="side-link {% if app == 'monitoring' and name == 'attendance_overview' %}active{% endif %}" href="{% url 'monitoring:attendance_overview' %}">
+            <i class="bi bi-calendar-check"></i><span>Attendance</span>
+          </a>
+          <a class="side-link {% if app == 'monitoring' and name == 'assessment_management' %}active{% endif %}" href="{% url 'monitoring:assessment_management' %}">
+            <i class="bi bi-clipboard2-check"></i><span>Assessments</span>
+          </a>
+          <a class="side-link {% if app == 'dashboard' and name == 'instructor_performance' %}active{% endif %}" href="{% url 'dashboard:instructor_performance' %}">
+            <i class="bi bi-bar-chart-line"></i><span>Performance</span>
+          </a>
+
+        {% elif user_role == 'ADVISER' %}
+          <a class="side-link {% if app == 'dashboard' and name == 'adviser' %}active{% endif %}" href="{% url 'dashboard:adviser' %}">
+            <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
+          </a>
+          <a class="side-link {% if app == 'advising' and name == 'assigned_students' %}active{% endif %}" href="{% url 'advising:assigned_students' %}">
+            <i class="bi bi-people"></i><span>Assigned Students</span>
+          </a>
+          <a class="side-link {% if app == 'predictions' and name == 'risk_overview' %}active{% endif %}" href="{% url 'predictions:risk_overview' %}">
+            <i class="bi bi-exclamation-triangle"></i><span>At-Risk Students</span>
+          </a>
+          <a class="side-link {% if app == 'advising' and name == 'intervention_list' %}active{% endif %}" href="{% url 'advising:intervention_list' %}">
+            <i class="bi bi-journal-medical"></i><span>Interventions</span>
+          </a>
+          <a class="side-link {% if app == 'dashboard' and name == 'adviser_progress' %}active{% endif %}" href="{% url 'dashboard:adviser_progress' %}">
+            <i class="bi bi-graph-up-arrow"></i><span>Progress Monitoring</span>
+          </a>
+
+        {% elif user_role == 'REGISTRAR' %}
+          <a class="side-link {% if app == 'dashboard' and name == 'registrar' %}active{% endif %}" href="{% url 'dashboard:registrar' %}">
+            <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
+          </a>
+          <a class="side-link {% if app == 'dashboard' and name == 'registrar_students' %}active{% endif %}" href="{% url 'dashboard:registrar_students' %}">
+            <i class="bi bi-people"></i><span>Students</span>
+          </a>
+          <a class="side-link {% if app == 'academics' and name == 'enrollment_list' %}active{% endif %}" href="{% url 'academics:enrollment_list' %}">
+            <i class="bi bi-person-check"></i><span>Enrolment</span>
+          </a>
+          <a class="side-link {% if app == 'academics' and name == 'course_list' %}active{% endif %}" href="{% url 'academics:course_list' %}">
+            <i class="bi bi-book"></i><span>Courses</span>
+          </a>
+          <a class="side-link {% if app == 'academics' and name == 'session_list' %}active{% endif %}" href="{% url 'academics:session_list' %}">
+            <i class="bi bi-calendar3"></i><span>Academic Sessions</span>
+          </a>
+          <a class="side-link {% if app == 'academics' and name == 'registrar_results' %}active{% endif %}" href="{% url 'academics:registrar_results' %}">
+            <i class="bi bi-clipboard2-data"></i><span>Results</span>
+          </a>
+          <a class="side-link {% if app == 'institutions' and name == 'departments' %}active{% endif %}" href="{% url 'institutions:departments' %}">
+            <i class="bi bi-diagram-3"></i><span>Departments</span>
+          </a>
+          <a class="side-link {% if app == 'institutions' and name == 'programmes' %}active{% endif %}" href="{% url 'institutions:programmes' %}">
+            <i class="bi bi-mortarboard"></i><span>Programmes</span>
+          </a>
+
+        {% elif user_role == 'INSTITUTION_ADMIN' %}
+          <a class="side-link {% if app == 'dashboard' and name == 'institution_admin' %}active{% endif %}" href="{% url 'dashboard:institution_admin' %}">
+            <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
+          </a>
+          <a class="side-link {% if app == 'accounts' and name == 'membership_management' %}active{% endif %}" href="{% url 'accounts:membership_management' %}">
+            <i class="bi bi-people"></i><span>Users</span>
+          </a>
+          <a class="side-link {% if app == 'institutions' and name == 'departments' %}active{% endif %}" href="{% url 'institutions:departments' %}">
+            <i class="bi bi-diagram-3"></i><span>Departments</span>
+          </a>
+          <a class="side-link {% if app == 'institutions' and name == 'programmes' %}active{% endif %}" href="{% url 'institutions:programmes' %}">
+            <i class="bi bi-mortarboard"></i><span>Programmes</span>
+          </a>
+          <a class="side-link {% if app == 'academics' and name == 'session_list' %}active{% endif %}" href="{% url 'academics:session_list' %}">
+            <i class="bi bi-calendar3"></i><span>Academic Settings</span>
+          </a>
+          <a class="side-link {% if app == 'dashboard' and name == 'reports' %}active{% endif %}" href="{% url 'dashboard:reports' %}">
+            <i class="bi bi-file-earmark-bar-graph"></i><span>Reports</span>
+          </a>
+          <a class="side-link {% if app == 'dashboard' and name == 'audit_logs' %}active{% endif %}" href="{% url 'dashboard:audit_logs' %}">
+            <i class="bi bi-shield-check"></i><span>Activity Log</span>
+          </a>
+          <a class="side-link {% if app == 'advising' and name == 'assign_adviser' %}active{% endif %}" href="{% url 'advising:assign_adviser' %}">
+            <i class="bi bi-person-heart"></i><span>Adviser Assignment</span>
+          </a>
+        {% endif %}
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-label">Account</div>
+        <a class="side-link {% if app == 'accounts' and name == 'profile' %}active{% endif %}" href="{% url 'accounts:profile' %}">
+          <i class="bi bi-person"></i><span>Profile</span>
+        </a>
+        <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+          {% csrf_token %}
+          <button type="submit" class="side-link side-link-button">
+            <i class="bi bi-box-arrow-right"></i><span>Sign out</span>
+          </button>
+        </form>
+      </div>
+    </nav>
+    {% endwith %}
+
+    <div class="sidebar-user">
+      <div class="avatar">{{ user.first_name|first|default:user.email|first|upper }}</div>
+      <div class="sidebar-user-copy">
+        <div class="sidebar-user-name">{{ user.get_full_name|default:user.email }}</div>
+        <div class="sidebar-user-role">{{ active_membership.get_role_display|default:"Platform Administrator" }}</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="icon-button d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#appSidebar" aria-controls="appSidebar" aria-label="Open navigation">
+          <i class="bi bi-list"></i>
+        </button>
+        <div class="topbar-context">
+          {% if is_platform_admin %}
+            <span class="context-label">EduTrack platform</span>
+            <span class="context-value">Platform administration</span>
+          {% else %}
+            <span class="context-label">{{ active_membership.get_role_display|default:"Institution" }}</span>
+            <span class="context-value">{{ active_institution.name|default:"EduTrack" }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        {% if user_memberships|length > 1 %}
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-arrow-left-right"></i>
+              <span class="d-none d-md-inline">Switch institution</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              {% for membership in user_memberships %}
+                {% if membership.id != active_membership.id %}
+                  <li>
+                    <form method="post" action="{% url 'accounts:switch_institution' membership.id %}">
+                      {% csrf_token %}
+                      <button type="submit" class="dropdown-item">
+                        <span class="fw-semibold">{{ membership.institution.code }}</span>
+                        <span class="text-muted small d-block">{{ membership.get_role_display }}</span>
+                      </button>
+                    </form>
+                  </li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <div class="dropdown">
+          <button class="user-chip dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="avatar avatar-sm">{{ user.first_name|first|default:user.email|first|upper }}</span>
+            <span class="user-chip-text d-none d-sm-inline">{{ user.first_name|default:user.email }}</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-person"></i> Profile</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right"></i> Sign out</button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+{% else %}
+<div class="public-shell">
+  <header class="public-header">
+    <a href="{% url 'dashboard:home' %}" class="brand brand-dark">
+      <span class="brand-mark" aria-hidden="true"><i class="bi bi-mortarboard-fill"></i></span>
+      <span class="brand-text">EduTrack</span>
+    </a>
+    <div class="d-flex align-items-center gap-2">
+      {% if user.is_authenticated %}
+        <span class="text-muted small d-none d-sm-inline">{{ user.get_full_name|default:user.email }}</span>
+        <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-secondary">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'accounts:login' %}" class="btn btn-sm btn-outline-secondary">Sign in</a>
+        <a href="{% url 'accounts:register' %}" class="btn btn-sm btn-primary">Create account</a>
+      {% endif %}
+    </div>
+  </header>
+{% endif %}
+
+    <main class="{% if user.is_authenticated and active_membership or is_platform_admin %}app-content{% else %}public-content{% endif %}" id="main-content">
+      {% include 'partials/messages.html' %}
+      {% block content %}{% endblock %}
+    </main>
+
+{% if user.is_authenticated and active_membership or is_platform_admin %}
+    <footer class="app-footer">
+      <span>EduTrack</span>
+      <span class="footer-sep">·</span>
+      <span>Academic management system</span>
+      <span class="ms-auto">© {% now "Y" %}</span>
+    </footer>
+  </div>
+</div>
+{% else %}
+  <footer class="public-footer">EduTrack © {% now "Y" %}</footer>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="{% static 'js/edutrack-charts.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Results processing · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Registrar's office</div>
+    <h1 class="page-title">Results processing</h1>
+    <p class="page-subtitle">Recorded final results, with the live assessment average shown separately.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:registrar' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="results-search">Search</label>
+    <input id="results-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Student, matric number or course code">
+  </div>
+  <div class="filter-field">
+    <label for="results-semester">Semester</label>
+    <select id="results-semester" name="semester" class="form-select form-select-sm">
+      <option value="">All semesters</option>
+      {% for semester in semesters %}
+        <option value="{{ semester.id }}" {% if semester_filter == semester.id|stringformat:'s' %}selected{% endif %}>{{ semester.session.name }} · {{ semester.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-field">
+    <label for="results-final">Final results</label>
+    <select id="results-final" name="final" class="form-select form-select-sm">
+      <option value="">All enrolments</option>
+      <option value="1" {% if only_final %}selected{% endif %}>Only published final results</option>
+    </select>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+    {% if search or semester_filter or only_final %}<a href="{% url 'academics:registrar_results' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if result_rows %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th scope="col" class="ps-3">Student</th>
+            <th scope="col">Course</th>
+            <th scope="col">Semester</th>
+            <th scope="col">Assessment average</th>
+            <th scope="col">Final score</th>
+            <th scope="col">Grade</th>
+            <th scope="col" class="pe-3">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in result_rows %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ row.enrollment.student.get_full_name|default:row.enrollment.student.email }}</span>
+                <span class="cell-sub d-block">{{ row.enrollment.student.matriculation_number|default:"No matric number" }}</span>
+              </td>
+              <td>
+                <span class="fw-semibold">{{ row.enrollment.course_offering.course.code }}</span>
+                <span class="cell-sub d-block">{{ row.enrollment.course_offering.course.title|truncatechars:34 }}</span>
+              </td>
+              <td class="small">{{ row.enrollment.course_offering.semester.name }}</td>
+              <td>
+                {% if row.assessment_average is not None %}
+                  <span class="fw-semibold">{{ row.assessment_average }}%</span>
+                  <span class="cell-sub d-block">Recorded assessments</span>
+                {% else %}
+                  <span class="muted small">No assessment scores</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.enrollment.final_score is not None %}
+                  <span class="fw-semibold">{{ row.enrollment.final_score }}</span>
+                {% else %}
+                  <span class="muted small">Not published</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.enrollment.final_grade %}
+                  <span class="badge badge-neutral">{{ row.enrollment.final_grade }}</span>
+                {% else %}
+                  <span class="muted small">—</span>
+                {% endif %}
+              </td>
+              <td class="pe-3">
+                <span class="badge badge-neutral">{{ row.enrollment.get_status_display }}</span>
+                <a href="{% url 'academics:final_result' row.enrollment.id %}" class="btn btn-sm btn-outline-secondary mt-1 d-inline-block"><i class="bi bi-pencil-square"></i> Record result</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='clipboard2-data' title='No results found' text='Published results and recorded assessments will appear here.' %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic advising</div>
+    <h1 class="page-title">Advising overview</h1>
+    <p class="page-subtitle">Monitoring and support for the students assigned to you.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'predictions:risk_overview' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-exclamation-triangle"></i> At-risk students</a>
+    <a href="{% url 'advising:create_intervention' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> New intervention</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat">
+    <div class="stat-label">Assigned students</div>
+    <div class="stat-value">{{ student_count }}</div>
+    <div class="stat-hint">Active advising assignments</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">High risk</div>
+    <div class="stat-value is-danger">{{ high_risk_count }}</div>
+    <div class="stat-hint">Predicted risk requiring attention</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Moderate risk</div>
+    <div class="stat-value is-warning">{{ medium_risk_count }}</div>
+    <div class="stat-hint">Students to monitor</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Open interventions</div>
+    <div class="stat-value">{{ open_intervention_count }}</div>
+    <div class="stat-hint">Scheduled or in progress</div>
+  </div>
+</div>
+
+<div class="grid dashboard-layout">
+  <div class="col-8">
+    <section class="section">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h2 class="section-title">Students needing attention</h2>
+            <p class="section-note">Advisory predictions for assigned students only.</p>
+          </div>
+          <a href="{% url 'predictions:risk_overview' %}" class="small">View all</a>
+        </div>
+        {% if at_risk_students %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr>
+                  <th scope="col" class="ps-3">Student</th>
+                  <th scope="col">Predicted risk</th>
+                  <th scope="col">Performance</th>
+                  <th scope="col">Attendance</th>
+                  <th scope="col">Indicators</th>
+                  <th scope="col" class="text-end pe-3">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in at_risk_students|slice:":8" %}
+                  <tr>
+                    <td class="ps-3">
+                      <span class="cell-title">{{ row.student.get_full_name|default:row.student.email }}</span>
+                      <span class="cell-sub d-block">{{ row.student.matriculation_number|default:"No matric number" }}</span>
+                    </td>
+                    <td>
+                      <span class="badge {% if row.prediction.risk_level == 'HIGH' %}badge-high-risk{% else %}badge-medium-risk{% endif %}">
+                        {{ row.prediction.get_risk_level_display }}
+                      </span>
+                    </td>
+                    <td>{% if row.average is not None %}{{ row.average }}%{% else %}<span class="muted small">—</span>{% endif %}</td>
+                    <td>{% if row.attendance_rate is not None %}{{ row.attendance_rate }}%{% else %}<span class="muted small">—</span>{% endif %}</td>
+                    <td>
+                      <span class="small muted">
+                        {% for factor in row.prediction.contributing_factors|slice:":1" %}{{ factor }}{% empty %}No negative indicators recorded.{% endfor %}
+                      </span>
+                    </td>
+                    <td class="text-end pe-3">
+                      <a href="{% url 'advising:create_intervention_for_student' row.student.id %}" class="btn btn-sm btn-outline-secondary">Record intervention</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='shield-check' title='No students currently flagged' text='Advisory risk predictions for your assigned students will appear here.' %}
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="grid">
+        <div class="col-6">
+          <div class="card chart-card">
+            <div class="card-header">
+              <h2 class="section-title">Performance trend</h2>
+              <p class="section-note">Average recorded performance of assigned students.</p>
+            </div>
+            <div class="card-body">
+              {% if performance_trend %}
+                <div class="chart-wrap"><canvas id="performanceTrendChart" role="img" aria-label="Line chart of assigned students performance by semester"></canvas></div>
+                {% include 'partials/chart_data_table.html' with chart_data_rows=performance_trend chart_data_caption='Average performance of assigned students by semester' chart_data_value_header='Average performance (%)' chart_data_suffix='%' %}
+              {% else %}
+                {% include 'partials/empty_state.html' with icon='graph-up' title='No trend data' text='A trend appears once results are recorded.' %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="card chart-card">
+            <div class="card-header">
+              <h2 class="section-title">Risk distribution</h2>
+              <p class="section-note">Current advisory estimates for assigned students.</p>
+            </div>
+            <div class="card-body">
+              {% if student_count %}
+                <div class="chart-wrap"><canvas id="riskDistributionChart" role="img" aria-label="Doughnut chart of predicted risk levels"></canvas></div>
+                {% include 'partials/chart_data_table.html' with chart_data_columns=risk_levels chart_data_values=risk_level_counts chart_data_caption='Predicted risk levels for assigned students' chart_data_series_name='Assigned students' chart_data_item_header='Risk level' chart_data_value_header='Students' %}
+                <p class="chart-caption">Predictions are advisory and never automatically affect a student's record.</p>
+              {% else %}
+                {% include 'partials/empty_state.html' with icon='people' title='No assigned students' %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="col-4">
+    <section class="section">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h2 class="section-title">Follow-ups</h2>
+          <a href="{% url 'advising:intervention_list' %}" class="small">All</a>
+        </div>
+        {% if follow_ups %}
+          <ul class="list-clean">
+            {% for intervention in follow_ups %}
+              <li class="list-row">
+                <div>
+                  <div class="list-title">{{ intervention.student.get_full_name|default:intervention.student.email }}</div>
+                  <div class="list-meta">{{ intervention.get_intervention_type_display }}{% if intervention.follow_up_date %} · {{ intervention.follow_up_date|date:"d M Y" }}{% endif %}</div>
+                </div>
+                <a href="{% url 'advising:intervention_detail' intervention.id %}" class="btn btn-sm btn-outline-secondary">Open</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='journal-check' title='No open follow-ups' text='Interventions you schedule appear here.' %}
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="section-title">Recent interventions</h2>
+        </div>
+        {% if interventions %}
+          <ul class="list-clean">
+            {% for intervention in interventions|slice:":6" %}
+              <li class="list-row">
+                <div>
+                  <div class="list-title">{{ intervention.student.get_full_name|default:intervention.student.email }}</div>
+                  <div class="list-meta">{{ intervention.date_conducted|date:"d M Y" }} · {{ intervention.get_status_display }}</div>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='journal-plus' title='No interventions recorded' %}
+        {% endif %}
+      </div>
+    </section>
+  </div>
+</div>
+
+{{ performance_trend|json_script:"performance-trend-data" }}
+{{ attendance_trend|json_script:"attendance-trend-data" }}
+{{ risk_counts|json_script:"risk-counts-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    var palette = window.EduTrackCharts.palette;
+    if (document.getElementById('performanceTrendChart')) {
+      var trend = JSON.parse(document.getElementById('performance-trend-data').textContent);
+      window.EduTrackCharts.line('performanceTrendChart', trend.map(function (row) { return row.label; }), [
+        { label: 'Average performance', data: trend.map(function (row) { return row.value; }), borderColor: palette.primary, backgroundColor: palette.primaryFill, fill: true }
+      ]);
+    }
+
+    if (document.getElementById('riskDistributionChart')) {
+      var counts = JSON.parse(document.getElementById('risk-counts-data').textContent);
+      window.EduTrackCharts.doughnut('riskDistributionChart',
+        ['High risk', 'Moderate risk', 'Low risk', 'No estimate'],
+        [counts.HIGH || 0, counts.MEDIUM || 0, counts.LOW || 0, counts.NONE || 0],
+        [palette.danger, palette.warning, palette.success, palette.neutral]
+      );
+    }
+  })();
+</script>
+{% endblock %}

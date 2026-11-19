@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Account status · EduTrack{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-5">
+  <div class="col-md-7 col-lg-6">
+    <div class="card auth-card">
+      <div class="card-body text-center">
+        {% if institution_unavailable %}
+          <span class="badge badge-neutral mb-2">Institution unavailable</span>
+          <h1 class="auth-title">Your institution is currently unavailable</h1>
+          <p class="auth-subtitle">
+            {{ membership.institution.name }} has been deactivated by the platform
+            administrators, so its academic records are not accessible right now.
+            If you believe this is an error, contact the EduTrack platform team.
+          </p>
+        {% elif membership.status == 'PENDING' %}
+          <span class="badge badge-medium-risk mb-2">Pending review</span>
+          <h1 class="auth-title">Membership request pending</h1>
+          <p class="auth-subtitle">
+            {{ user.get_full_name|default:user.email }}, your request to join
+            {{ membership.institution.name }} as {{ membership.get_role_display }}
+            is awaiting an administrator decision.
+          </p>
+        {% elif membership.status == 'REJECTED' %}
+          <span class="badge badge-high-risk mb-2">Declined</span>
+          <h1 class="auth-title">Membership request declined</h1>
+          <p class="auth-subtitle">Your request to join {{ membership.institution.name }} was not approved.</p>
+          {% if membership.rejection_reason %}
+            <div class="advisory-notice text-start">{{ membership.rejection_reason }}</div>
+          {% endif %}
+        {% elif membership.status == 'SUSPENDED' %}
+          <span class="badge badge-neutral mb-2">Suspended</span>
+          <h1 class="auth-title">Membership suspended</h1>
+          <p class="auth-subtitle">Your institution membership has been suspended. Contact your institution administrator.</p>
+        {% else %}
+          <span class="badge badge-neutral mb-2">No access</span>
+          <h1 class="auth-title">No approved membership</h1>
+          <p class="auth-subtitle">There is no approved institutional membership linked to this account.</p>
+        {% endif %}
+
+        {% if membership %}
+          <div class="card text-start mt-3">
+            <div class="card-body">
+              <div class="data-pair"><dt>Institution</dt><dd>{{ membership.institution.name }} ({{ membership.institution.code }})</dd></div>
+              <div class="data-pair"><dt>Requested role</dt><dd>{{ membership.get_role_display }}</dd></div>
+              <div class="data-pair"><dt>Requested</dt><dd>{{ membership.requested_at|date:"d M Y H:i" }}</dd></div>
+              <div class="data-pair"><dt>Status</dt><dd>{{ membership.get_status_display }}</dd></div>
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-center gap-2 mt-4">
+          <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary">Sign out</button>
+          </form>
+          <a href="{% url 'accounts:pending_approval' %}" class="btn btn-primary">Refresh status</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Grade assessment · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ assessment.course_offering.course.code }} · {{ assessment.get_assessment_type_display }}</div>
+    <h1 class="page-title">{{ assessment.title }}</h1>
+    <p class="page-subtitle">Maximum {{ assessment.max_score }} · Weight {{ assessment.weight_percentage }}% · {{ assessment.course_offering.course.title }}</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'monitoring:assessment_management' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Assessments</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="section-title">Enter or update scores</h2>
+    <p class="section-note">Scores must be between 0 and {{ assessment.max_score }}. Leave a field blank to skip that student.</p>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr><th scope="col" class="ps-3">Student</th><th scope="col">Score</th><th scope="col" class="pe-3">Feedback</th></tr>
+          </thead>
+          <tbody>
+            {% for row in students_rows %}
+              <tr>
+                <td class="ps-3">
+                  <span class="cell-title">{{ row.student.get_full_name|default:row.student.email }}</span>
+                  <span class="cell-sub d-block">{{ row.student.matriculation_number|default:row.student.email }}</span>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <input type="number" step="0.5" min="0" max="{{ assessment.max_score }}" name="score_{{ row.student.id }}" value="{{ row.score }}" class="form-control form-control-sm" style="max-width: 110px;">
+                    <span class="small muted">/ {{ assessment.max_score }}</span>
+                  </div>
+                </td>
+                <td class="pe-3">
+                  <input type="text" name="feedback_{{ row.student.id }}" value="{{ row.feedback }}" class="form-control form-control-sm" maxlength="2000" placeholder="Optional feedback">
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="text-center py-4 muted small">No active students are enrolled in this course.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <a href="{% url 'monitoring:assessment_management' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save scores</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

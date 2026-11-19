@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Model evaluation · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">EduTrack platform · Technical documentation</div>
+    <h1 class="page-title">Risk model evaluation</h1>
+    <p class="page-subtitle">Evaluation results for the advisory risk model. These estimates never modify academic records.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'dashboard:platform_admin' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Platform overview</a>
+  </div>
+</div>
+
+<div class="app-alert app-alert-warning" role="alert">
+  <i class="bi bi-exclamation-triangle"></i>
+  <div class="app-alert-text">
+    <strong>Limited validation.</strong> The deployed model was trained on synthetic simulation data, not real academic records. The metrics below were recorded from a single evaluation run on that synthetic data and have not been validated against real institutional performance. Random Forest was fixed at first build although Logistic Regression scored higher on every recorded metric. Estimates are advisory only.
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="section-title">Candidate models</h2>
+    <p class="section-note">
+      {% if metrics.selected_model %}Selected model: {{ metrics.selected_model }}{% else %}No model selection is recorded.{% endif %}
+    </p>
+  </div>
+  {% if models_evaluation %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th scope="col" class="ps-3">Model</th><th scope="col">Accuracy</th><th scope="col">Precision</th><th scope="col">Recall</th><th scope="col">F1 score</th><th scope="col" class="pe-3">High-risk recall</th></tr>
+        </thead>
+        <tbody>
+          {% for name, evaluation in models_evaluation.items %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ name }}</span>
+                {% if name == metrics.selected_model %}<span class="badge badge-low-risk ms-2">Selected</span>{% endif %}
+              </td>
+              <td class="small">{{ evaluation.accuracy }}</td>
+              <td class="small">{{ evaluation.precision }}</td>
+              <td class="small">{{ evaluation.recall }}</td>
+              <td class="small">{{ evaluation.f1_score }}</td>
+              <td class="pe-3 small">{{ evaluation.high_risk_recall }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='clipboard-x' title='No evaluation data' text='Train and evaluate the model to populate this table.' %}
+  {% endif %}
+</div>
+
+<div class="grid">
+  <div class="col-6">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="section-title">Feature importance</h2>
+        <p class="section-note">Relative contribution of each feature in the selected model.</p>
+      </div>
+      <div class="card-body">
+        {% for feature, importance in feature_importances.items %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="cell-title">{{ feature }}</span>
+              <span class="muted">{{ importance }}</span>
+            </div>
+            <div class="progress"><div class="progress-bar" style="width: {% widthratio importance 1 100 %}%;"></div></div>
+          </div>
+        {% empty %}
+          <p class="small muted mb-0">No feature importance data is available.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6">
+    <div class="card">
+      <div class="card-header"><h2 class="section-title">How estimates are used</h2></div>
+      <div class="card-body">
+        <ul class="list-clean">
+          <li class="list-row"><span class="small">Estimates use attendance and continuous assessment data recorded before final examinations.</span></li>
+          <li class="list-row"><span class="small">Final examination results are excluded from the feature set to avoid target leakage.</span></li>
+          <li class="list-row"><span class="small">Estimates are advisory only and never automatically fail, suspend or disqualify a student.</span></li>
+          <li class="list-row"><span class="small">Students and advisers can see the recorded factors behind each estimate.</span></li>
+        </ul>
+        <div class="advisory-notice">
+          Model output is decision support. Official academic decisions are made by authorised institution staff.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

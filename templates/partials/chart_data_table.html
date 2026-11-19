@@ -1,0 +1,66 @@
+{% comment %}
+Accessible text fallback for a Chart.js canvas (Phase 6 a11y remediation).
+
+Two usage modes, selected by which variables are set:
+
+1. Row series - chart_data_rows: a list of {label, value} dicts, as used for
+   trend charts (semester/attendance/date trends).
+2. Column series - chart_data_columns: a list of item labels together with
+   chart_data_values: a parallel list of numbers, as used by bar and doughnut
+   charts whose data is stored as parallel lists.
+
+Shared options:
+- chart_data_caption: visible summary text for the details/summary element.
+- chart_data_item_header / chart_data_value_header: column titles.
+- chart_data_series_name: row title in column mode.
+- chart_data_suffix: unit appended to each value, e.g. "%".
+
+Values come from the same context objects that drive the charts; nothing is
+invented here. When Chart.js is unavailable, JavaScript is disabled or a
+screen reader is used, the same numbers are readable as a table.
+{% endcomment %}
+
+{% if chart_data_rows %}
+  <details class="chart-fallback">
+    <summary>Data table{% if chart_data_caption %} · {{ chart_data_caption }}{% endif %}</summary>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <caption class="visually-hidden">{{ chart_data_caption|default:"Chart data" }} — text alternative to the chart above.</caption>
+        <thead>
+          <tr>
+            <th scope="col">{{ chart_data_item_header|default:"Item" }}</th>
+            <th scope="col">{{ chart_data_value_header|default:"Value" }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in chart_data_rows %}
+            <tr>
+              <th scope="row">{{ row.label }}</th>
+              <td>{% if row.value != None %}{{ row.value }}{% if chart_data_suffix %}{{ chart_data_suffix }}{% endif %}{% else %}No recorded data{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+{% elif chart_data_columns %}
+  <details class="chart-fallback">
+    <summary>Data table{% if chart_data_caption %} · {{ chart_data_caption }}{% endif %}</summary>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <caption class="visually-hidden">{{ chart_data_caption|default:"Chart data" }} — text alternative to the chart above.</caption>
+        <thead>
+          <tr>{% for column in chart_data_columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">{{ chart_data_series_name|default:"Value" }}</th>
+            {% for value in chart_data_values %}
+              <td>{% if value != None %}{{ value }}{% if chart_data_suffix %}{{ chart_data_suffix }}{% endif %}{% else %}No recorded data{% endif %}</td>
+            {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+{% endif %}

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Students · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Teaching workspace</div>
+    <h1 class="page-title">Students in my courses</h1>
+    <p class="page-subtitle">{{ total_students }} student{{ total_students|pluralize }} enrolled in the courses assigned to you.</p>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="student-search">Search</label>
+    <input id="student-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Name, email or matric number">
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Search</button>
+    {% if search %}<a href="{% url 'dashboard:instructor_students' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if student_rows %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th scope="col" class="ps-3">Student</th>
+            <th scope="col">Matric number</th>
+            <th scope="col">Email</th>
+            <th scope="col" class="pe-3">Courses with you</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in student_rows %}
+            <tr>
+              <td class="ps-3"><span class="cell-title">{{ row.student.get_full_name|default:row.student.email }}</span></td>
+              <td><span class="small">{{ row.student.matriculation_number|default:"—" }}</span></td>
+              <td><span class="small muted">{{ row.student.email }}</span></td>
+              <td class="pe-3">
+                {% for code in row.courses %}<span class="badge badge-neutral me-1">{{ code }}</span>{% endfor %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='people' title='No students found' text='Students appear here when they are enrolled in a course assigned to you.' %}
+  {% endif %}
+</div>
+{% endblock %}

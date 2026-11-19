@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}New semester · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic settings</div>
+    <h1 class="page-title">Create a semester</h1>
+    <p class="page-subtitle">Add a semester to one of the sessions of {{ institution.name }}.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'academics:session_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Sessions</a>
+  </div>
+</div>
+
+<div class="card" style="max-width: 720px;">
+  <div class="card-body">
+    {% if not sessions %}
+      {% include 'partials/empty_state.html' with icon='calendar3' title='No academic sessions' text='Create an academic session before adding semesters.' %}
+    {% else %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="grid">
+          <div class="col-6">
+            <div class="filter-field">
+              <label class="form-label" for="semester-session">Academic session *</label>
+              <select id="semester-session" name="session" class="form-select" required>
+                <option value="">Choose a session</option>
+                {% for session in sessions %}
+                  <option value="{{ session.id }}">{{ session.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="filter-field">
+              <label class="form-label" for="semester-term">Term *</label>
+              <select id="semester-term" name="term" class="form-select" required>
+                {% for value, label in terms %}
+                  <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-field">
+          <label class="form-label" for="semester-name">Semester name *</label>
+          <input id="semester-name" type="text" name="name" class="form-control" placeholder="e.g. First Semester 2026/2027" maxlength="100" required>
+        </div>
+
+        <div class="grid">
+          <div class="col-6">
+            <div class="filter-field">
+              <label class="form-label" for="semester-start">Start date *</label>
+              <input id="semester-start" type="date" name="start_date" class="form-control" required>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="filter-field">
+              <label class="form-label" for="semester-end">End date *</label>
+              <input id="semester-end" type="date" name="end_date" class="form-control" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" id="semester-current" name="is_current">
+          <label class="form-check-label" for="semester-current">Mark as the current semester</label>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <a href="{% url 'academics:session_list' %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Create semester</button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

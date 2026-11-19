@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Registrar's office</div>
+    <h1 class="page-title">Registration overview</h1>
+    <p class="page-subtitle">Enrolment, course offerings and academic session administration.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'academics:enrollment_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-person-check"></i> Enrolments</a>
+    <a href="{% url 'academics:course_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add course</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat">
+    <div class="stat-label">Students</div>
+    <div class="stat-value">{{ student_count }}</div>
+    <div class="stat-hint">Approved student memberships</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Active enrolments</div>
+    <div class="stat-value">{{ enrollment_count }}</div>
+    <div class="stat-hint">Course registration records</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Course offerings</div>
+    <div class="stat-value">{{ offering_count }}</div>
+    <div class="stat-hint">{{ course_count }} courses in the catalogue</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Academic sessions</div>
+    <div class="stat-value">{{ session_count }}</div>
+    <div class="stat-hint">{{ semester_count }} semester{{ semester_count|pluralize }} configured</div>
+  </div>
+</div>
+
+<div class="grid dashboard-layout">
+  <div class="col-8">
+    <section class="section">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h2 class="section-title">Recent enrolments</h2>
+            <p class="section-note">Latest student course registrations.</p>
+          </div>
+          <a href="{% url 'academics:enrollment_list' %}" class="small">View all</a>
+        </div>
+        {% if recent_enrollments %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr><th scope="col" class="ps-3">Student</th><th scope="col">Course</th><th scope="col">Semester</th><th scope="col">Status</th><th scope="col" class="pe-3">Registered</th></tr>
+              </thead>
+              <tbody>
+                {% for enrollment in recent_enrollments %}
+                  <tr>
+                    <td class="ps-3"><span class="cell-title">{{ enrollment.student.get_full_name|default:enrollment.student.email }}</span><span class="cell-sub d-block">{{ enrollment.student.matriculation_number|default:"No matric number" }}</span></td>
+                    <td><span class="fw-semibold">{{ enrollment.course_offering.course.code }}</span><span class="cell-sub d-block">{{ enrollment.course_offering.course.title|truncatechars:32 }}</span></td>
+                    <td class="small">{{ enrollment.course_offering.semester.name }}</td>
+                    <td><span class="badge badge-neutral">{{ enrollment.get_status_display }}</span></td>
+                    <td class="pe-3 small muted">{{ enrollment.enrolled_at|date:"d M Y" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='person-plus' title='No enrolments recorded' %}
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h2 class="section-title">Active course offerings</h2>
+            <p class="section-note">Assigned instructors and enrolment counts.</p>
+          </div>
+          <a href="{% url 'academics:offering_list' %}" class="small">View all</a>
+        </div>
+        {% if active_offerings %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr><th scope="col" class="ps-3">Course</th><th scope="col">Semester</th><th scope="col">Instructor</th><th scope="col" class="pe-3">Enrolled</th></tr>
+              </thead>
+              <tbody>
+                {% for offering in active_offerings %}
+                  <tr>
+                    <td class="ps-3"><span class="cell-title">{{ offering.course.code }}</span><span class="cell-sub d-block">{{ offering.course.title|truncatechars:38 }}</span></td>
+                    <td class="small">{{ offering.semester.name }}</td>
+                    <td class="small">{{ offering.instructor.get_full_name|default:"Unassigned" }}</td>
+                    <td class="pe-3">{{ offering.active_enrollments }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='easel' title='No active offerings' %}
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  <div class="col-4">
+    <section class="section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="section-title">Quick actions</h2>
+        </div>
+        <div class="card-body d-grid gap-2">
+          <a href="{% url 'academics:enrollment_list' %}" class="btn btn-outline-secondary text-start"><i class="bi bi-person-check"></i> Manage enrolments</a>
+          <a href="{% url 'academics:course_list' %}" class="btn btn-outline-secondary text-start"><i class="bi bi-book"></i> Course catalogue</a>
+          <a href="{% url 'academics:session_list' %}" class="btn btn-outline-secondary text-start"><i class="bi bi-calendar3"></i> Academic sessions</a>
+          <a href="{% url 'academics:registrar_results' %}" class="btn btn-outline-secondary text-start"><i class="bi bi-clipboard2-data"></i> Results processing</a>
+          <a href="{% url 'dashboard:registrar_students' %}" class="btn btn-outline-secondary text-start"><i class="bi bi-people"></i> Student directory</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="section-title">Current period</h2>
+        </div>
+        <div class="card-body">
+          <dl class="mb-0">
+            <div class="data-pair"><dt>Academic session</dt><dd>{{ current_session.name|default:"Not set" }}</dd></div>
+            <div class="data-pair"><dt>Semester</dt><dd>{{ current_semester.name|default:"Not set" }}</dd></div>
+            <div class="data-pair"><dt>Departments</dt><dd>{{ department_count }}</dd></div>
+            <div class="data-pair"><dt>Programmes</dt><dd>{{ programme_count }}</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="section-title">Department summary</h2>
+        </div>
+        {% if departments.rows %}
+          <ul class="list-clean">
+            {% for row in departments.rows %}
+              <li class="list-row">
+                <div>
+                  <div class="list-title">{{ row.department.name }}</div>
+                  <div class="list-meta">{{ row.student_count }} student{{ row.student_count|pluralize }} with recorded results</div>
+                </div>
+                <span class="small fw-semibold">{% if row.average is not None %}{{ row.average }}%{% else %}—{% endif %}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          {% include 'partials/empty_state.html' with icon='diagram-3' title='No departments configured' %}
+        {% endif %}
+      </div>
+    </section>
+  </div>
+</div>
+
+<section class="section">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="section-title">Class performance</h2>
+        <p class="section-note">Recorded results and attendance per active offering. Class averages appear only with at least 5 recorded results.</p>
+      </div>
+      <a href="{% url 'academics:offering_list' %}" class="small">All offerings</a>
+    </div>
+    {% if class_rows %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr><th scope="col" class="ps-3">Course</th><th scope="col">Instructor</th><th scope="col">Enrolled</th><th scope="col">Results</th><th scope="col">Attendance</th><th scope="col" class="pe-3">Average</th></tr>
+          </thead>
+          <tbody>
+            {% for row in class_rows %}
+              <tr>
+                <td class="ps-3"><span class="cell-title">{{ row.offering.course.code }}</span><span class="cell-sub d-block">{{ row.offering.course.title|truncatechars:34 }} · {{ row.offering.semester.name }}</span></td>
+                <td class="small">{{ row.offering.instructor.get_full_name|default:"Unassigned" }}</td>
+                <td class="small">{{ row.enrolled_count }}</td>
+                <td class="small">{{ row.record_count }}</td>
+                <td class="small">{% if row.attendance is not None %}{{ row.attendance }}%{% else %}<span class="muted">No records</span>{% endif %}</td>
+                <td class="pe-3">
+                  {% if row.average is not None %}
+                    <span class="fw-semibold">{{ row.average }}%</span>
+                  {% else %}
+                    <span class="muted small">Insufficient data</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include 'partials/empty_state.html' with icon='easel' title='No active course offerings' %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

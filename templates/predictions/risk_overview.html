@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}At-risk students · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · {{ is_adviser|yesno:"Academic advising,Institution administration" }}</div>
+    <h1 class="page-title">At-risk students</h1>
+    <p class="page-subtitle">
+      {% if is_adviser %}Advisory estimates for students formally assigned to you.{% else %}Advisory estimates for students in your institution.{% endif %}
+      Predictions are not official results.
+    </p>
+  </div>
+  <div class="page-actions">
+    {% if is_adviser %}<a href="{% url 'advising:assigned_students' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-people"></i> Assigned students</a>{% endif %}
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat">
+    <div class="stat-label">High risk</div>
+    <div class="stat-value is-danger">{{ high_risk_count }}</div>
+    <div class="stat-hint">Current advisory estimates</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Moderate risk</div>
+    <div class="stat-value is-warning">{{ medium_risk_count }}</div>
+    <div class="stat-hint">Current advisory estimates</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Low risk</div>
+    <div class="stat-value is-success">{{ low_risk_count }}</div>
+    <div class="stat-hint">Current advisory estimates</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Total estimates</div>
+    <div class="stat-value">{{ total_count }}</div>
+    <div class="stat-hint">Across the population you can view</div>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="risk-search">Search</label>
+    <input id="risk-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Name or matric number">
+  </div>
+  <div class="filter-field">
+    <label for="risk-level">Estimate level</label>
+    <select id="risk-level" name="level" class="form-select form-select-sm">
+      <option value="">All levels</option>
+      <option value="HIGH" {% if risk_filter == 'HIGH' %}selected{% endif %}>High risk ({{ high_risk_count }})</option>
+      <option value="MEDIUM" {% if risk_filter == 'MEDIUM' %}selected{% endif %}>Moderate risk ({{ medium_risk_count }})</option>
+      <option value="LOW" {% if risk_filter == 'LOW' %}selected{% endif %}>Low risk ({{ low_risk_count }})</option>
+    </select>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+    {% if search or risk_filter %}<a href="{% url 'predictions:risk_overview' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if predictions %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th scope="col" class="ps-3">Student</th><th scope="col">Semester</th><th scope="col">Estimate</th><th scope="col">Likelihood</th><th scope="col">Indicators</th><th scope="col">Assessed</th><th scope="col" class="text-end pe-3">Action</th></tr>
+        </thead>
+        <tbody>
+          {% for prediction in predictions %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ prediction.student.get_full_name|default:prediction.student.email }}</span>
+                <span class="cell-sub d-block">{{ prediction.student.matriculation_number|default:prediction.student.email }}</span>
+              </td>
+              <td class="small">{{ prediction.semester.name }}</td>
+              <td>
+                <span class="badge {% if prediction.risk_level == 'HIGH' %}badge-high-risk{% elif prediction.risk_level == 'MEDIUM' %}badge-medium-risk{% else %}badge-low-risk{% endif %}">{{ prediction.get_risk_level_display }}</span>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress" style="width: 64px;">
+                    <div class="progress-bar {% if prediction.risk_level == 'HIGH' %}bg-danger{% elif prediction.risk_level == 'MEDIUM' %}bg-warning{% else %}bg-success{% endif %}" style="width: {{ prediction.risk_percentage }}%;"></div>
+                  </div>
+                  <span class="small fw-semibold">{{ prediction.risk_percentage }}%</span>
+                </div>
+              </td>
+              <td class="small muted">
+                {% for factor in prediction.contributing_factors|slice:":2" %}
+                  {{ factor }}{% if not forloop.last %}; {% endif %}
+                {% empty %}
+                  No negative indicators recorded.
+                {% endfor %}
+              </td>
+              <td class="small muted">{{ prediction.predicted_at|date:"d M Y" }}</td>
+              <td class="text-end pe-3">
+                <div class="inline-actions">
+                  {% if is_adviser %}
+                    <a href="{% url 'advising:create_intervention_for_student' prediction.student.id %}" class="btn btn-sm btn-outline-secondary">Intervene</a>
+                  {% endif %}
+                  <form method="post" action="{% url 'predictions:evaluate_student' prediction.student.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Refresh</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='shield-check' title='No estimates found' text='Estimates appear once attendance and coursework records exist.' %}
+  {% endif %}
+</div>
+{% endblock %}

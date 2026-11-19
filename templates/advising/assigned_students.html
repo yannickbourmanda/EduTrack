@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Assigned students · EduTrack{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-copy">
+    <div class="page-eyebrow">{{ institution.code }} · Academic advising</div>
+    <h1 class="page-title">Assigned students</h1>
+    <p class="page-subtitle">Only students formally assigned to you are listed.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'advising:create_intervention' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Log intervention</a>
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search">
+  <div class="filter-field">
+    <label for="advisee-search">Search</label>
+    <input id="advisee-search" type="search" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Name, email or matric number">
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm btn-primary">Search</button>
+    {% if search %}<a href="{% url 'advising:assigned_students' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+  </div>
+</form>
+
+<div class="card">
+  {% if students_data %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th scope="col" class="ps-3">Student</th><th scope="col">Performance</th><th scope="col">Attendance</th><th scope="col">Predicted risk</th><th scope="col">Advisory estimate</th><th scope="col" class="text-end pe-3">Action</th></tr>
+        </thead>
+        <tbody>
+          {% for row in students_data %}
+            <tr>
+              <td class="ps-3">
+                <span class="cell-title">{{ row.student.get_full_name|default:row.student.email }}</span>
+                <span class="cell-sub d-block">{{ row.student.matriculation_number|default:row.student.email }}</span>
+              </td>
+              <td>
+                {% if row.average is not None %}
+                  <span class="fw-semibold">{{ row.average }}%</span>
+                {% else %}
+                  <span class="muted small">No scores</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.attendance_rate is not None %}
+                  <span class="fw-semibold">{{ row.attendance_rate }}%</span>
+                {% else %}
+                  <span class="muted small">No records</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.prediction %}
+                  <span class="badge {% if row.prediction.risk_level == 'HIGH' %}badge-high-risk{% elif row.prediction.risk_level == 'MEDIUM' %}badge-medium-risk{% else %}badge-low-risk{% endif %}">
+                    {{ row.prediction.get_risk_level_display }}
+                  </span>
+                {% else %}
+                  <span class="badge badge-neutral">No estimate</span>
+                {% endif %}
+              </td>
+              <td class="small muted">
+                {% if row.prediction %}{{ row.prediction.risk_percentage }}%{% else %}—{% endif %}
+              </td>
+              <td class="text-end pe-3">
+                <a href="{% url 'advising:create_intervention_for_student' row.student.id %}" class="btn btn-sm btn-outline-secondary">Record intervention</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include 'partials/pagination.html' %}
+  {% else %}
+    {% include 'partials/empty_state.html' with icon='people' title='No assigned students' text='Students assigned to you by the institution will appear here.' %}
+  {% endif %}
+</div>
+{% endblock %}
