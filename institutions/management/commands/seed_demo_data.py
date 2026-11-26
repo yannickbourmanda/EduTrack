@@ -313,6 +313,156 @@ class Command(BaseCommand):
             defaults={'score': 62.0, 'graded_by': lecturer, 'feedback': 'Satisfactory performance.'}
         )
 
+        # Historical demo records give the trend charts several real data
+        # points; current-semester scores above remain unchanged.
+        historical_terms = [
+            {
+                'session_name': '2022/2023',
+                'session_start': date(2022, 9, 1),
+                'session_end': date(2023, 6, 30),
+                'semester_start': date(2022, 9, 8),
+                'semester_end': date(2023, 1, 20),
+                'scores': {
+                    student_at_risk: (12.0, 65.0),
+                    student_good: (14.0, 76.0),
+                    student_moderate: (11.0, 58.0),
+                },
+                'attendance': {
+                    student_at_risk: {0, 2, 4},
+                    student_good: {0, 1, 2, 4},
+                    student_moderate: {0, 2, 4},
+                },
+            },
+            {
+                'session_name': '2023/2024',
+                'session_start': date(2023, 9, 1),
+                'session_end': date(2024, 6, 30),
+                'semester_start': date(2023, 9, 8),
+                'semester_end': date(2024, 1, 20),
+                'scores': {
+                    student_at_risk: (14.0, 60.0),
+                    student_good: (17.0, 84.0),
+                    student_moderate: (14.0, 66.0),
+                },
+                'attendance': {
+                    student_at_risk: {0, 1, 2, 3, 4},
+                    student_good: {0, 1, 2, 3, 4},
+                    student_moderate: {0, 1, 2, 4},
+                },
+            },
+            {
+                'session_name': '2024/2025',
+                'session_start': date(2024, 9, 1),
+                'session_end': date(2025, 6, 30),
+                'semester_start': date(2024, 9, 8),
+                'semester_end': date(2025, 1, 20),
+                'scores': {
+                    student_at_risk: (9.0, 48.0),
+                    student_good: (18.0, 92.0),
+                    student_moderate: (12.0, 62.0),
+                },
+                'attendance': {
+                    student_at_risk: {0, 3},
+                    student_good: {0, 1, 2, 3, 4, 5},
+                    student_moderate: {0, 2, 4},
+                },
+            },
+        ]
+        for term in historical_terms:
+            history_session, _ = AcademicSession.objects.get_or_create(
+                institution=aun,
+                name=term['session_name'],
+                defaults={
+                    'start_date': term['session_start'],
+                    'end_date': term['session_end'],
+                },
+            )
+            history_semester, _ = Semester.objects.get_or_create(
+                institution=aun,
+                session=history_session,
+                term=Semester.TermChoices.FIRST,
+                defaults={
+                    'name': f"First Semester {term['session_name']}",
+                    'start_date': term['semester_start'],
+                    'end_date': term['semester_end'],
+                },
+            )
+            history_offering, _ = CourseOffering.objects.get_or_create(
+                institution=aun,
+                course=course_oosc,
+                session=history_session,
+                semester=history_semester,
+                defaults={
+                    'instructor': lecturer,
+                    'syllabus': 'Historical CSC301 demonstration offering.',
+                },
+            )
+            history_quiz, _ = Assessment.objects.get_or_create(
+                institution=aun,
+                course_offering=history_offering,
+                title='Quiz 1: Course Foundations',
+                defaults={
+                    'assessment_type': AssessmentType.QUIZ,
+                    'max_score': 20.0,
+                    'weight_percentage': 10.0,
+                    'due_date': term['semester_start'] + timedelta(days=35),
+                },
+            )
+            history_midterm, _ = Assessment.objects.get_or_create(
+                institution=aun,
+                course_offering=history_offering,
+                title='Mid-Semester Assessment',
+                defaults={
+                    'assessment_type': AssessmentType.MIDTERM,
+                    'max_score': 100.0,
+                    'weight_percentage': 30.0,
+                    'due_date': term['semester_start'] + timedelta(days=75),
+                },
+            )
+
+            for historical_student, scores in term['scores'].items():
+                Enrollment.objects.get_or_create(
+                    institution=aun,
+                    student=historical_student,
+                    course_offering=history_offering,
+                )
+                for assessment, score in zip(
+                    (history_quiz, history_midterm), scores
+                ):
+                    AssessmentResult.objects.get_or_create(
+                        institution=aun,
+                        assessment=assessment,
+                        student=historical_student,
+                        defaults={
+                            'score': score,
+                            'graded_by': lecturer,
+                            'feedback': 'Historical demonstration result.',
+                        },
+                    )
+
+                attended_dates = term['attendance'][historical_student]
+                for index in range(6):
+                    class_date = term['semester_start'] + timedelta(days=index * 14)
+                    class_session, _ = ClassSession.objects.get_or_create(
+                        institution=aun,
+                        course_offering=history_offering,
+                        session_date=class_date,
+                        defaults={'topic': f'Historical demonstration class {index + 1}'},
+                    )
+                    AttendanceRecord.objects.get_or_create(
+                        institution=aun,
+                        class_session=class_session,
+                        student=historical_student,
+                        defaults={
+                            'status': (
+                                AttendanceStatus.PRESENT
+                                if index in attended_dates
+                                else AttendanceStatus.ABSENT
+                            ),
+                            'notes': 'Historical demonstration attendance.',
+                        },
+                    )
+
         # 14. Academic Intervention initiated by Adviser for Emmanuel
         AcademicIntervention.objects.get_or_create(
             institution=aun, student=student_at_risk, adviser=adviser,

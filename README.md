@@ -1,6 +1,6 @@
 # EduTrack: Academic Management Platform
 
-**Project Category:** Educational Technology (Object-Oriented Software Construction)  
+**Project Category:** Educational Technology (Object-Oriented Software Construction SEN306)  
 **Author / Developer:** Software Engineering Student  
 **Architecture:** Modular Monolithic Django Platform with Logical Multi-Tenancy  
 
@@ -184,6 +184,10 @@ python manage.py test tests
 
 # 7. Start development server
 python manage.py runserver
+
+Alternatively, without activating the virtual environment:
+
+.\.venv\Scripts\python.exe manage.py runserver
 ```
 
 ---

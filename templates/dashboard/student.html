@@ -190,7 +190,7 @@
             <div class="card-body">
               {% if score_distribution.total %}
                 <div class="chart-wrap"><canvas id="scoreDistributionChart" role="img" aria-label="Bar chart of your recorded course score bands"></canvas></div>
-                <p class="chart-caption">Based on your recorded results; not an official grade classification.</p>
+                <p class="chart-caption">Includes semesters with recorded course scores; not an official grade classification.</p>
                 {% include 'partials/chart_data_table.html' with chart_data_columns=score_distribution.labels chart_data_values=score_distribution.values chart_data_caption='Your recorded course scores by band' chart_data_series_name='Courses' chart_data_item_header='Score band' chart_data_value_header='Courses' %}
               {% else %}
                 {% include 'partials/empty_state.html' with icon='bar-chart' title='No recorded scores yet' text='The distribution appears once a course result is recorded for you.' %}

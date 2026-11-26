@@ -8,6 +8,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+demo accoount credentials.txt
 
 # Local databases and backups must never be versioned: the seeded SQLite file
 # contains demo accounts with a documented password, and backups contain the

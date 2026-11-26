@@ -253,18 +253,31 @@ def student_course_rows(student, institution, active_only=True, semester=None):
         student=student,
         institution=institution,
     )
-    if semester is not None:
-        queryset = queryset.filter(course_offering__semester=semester)
     queryset = queryset.select_related(
         'course_offering__course',
         'course_offering__instructor',
         'course_offering__semester__session',
     )
-    if active_only:
-        queryset = queryset.filter(status=Enrollment.EnrollmentStatus.ACTIVE)
     enrollments = list(queryset)
 
     performance_map = assessment_performance_map(institution, [student.id])
+    recorded_scores = []
+    for enrollment in enrollments:
+        score = enrollment_performance(enrollment, performance_map)
+        if score is not None:
+            recorded_scores.append(score)
+    if semester is not None:
+        enrollments = [
+            enrollment
+            for enrollment in enrollments
+            if enrollment.course_offering.semester_id == semester.id
+        ]
+    if active_only:
+        enrollments = [
+            enrollment
+            for enrollment in enrollments
+            if enrollment.status == Enrollment.EnrollmentStatus.ACTIVE
+        ]
     attendance_rates, overall = attendance_map(
         institution, [student.id], semester=semester
     )
@@ -296,7 +309,7 @@ def student_course_rows(student, institution, active_only=True, semester=None):
             ),
         })
 
-    return rows, overall
+    return rows, overall, recorded_scores
 
 
 def performance_by_semester(student_ids, institution):
@@ -419,7 +432,11 @@ def assessment_progress(student, institution, limit=12):
         AssessmentResult.objects
         .filter(student=student, institution=institution)
         .select_related('assessment__course_offering__course')
-        .order_by('graded_at', 'assessment__due_date')[:limit]
+        .order_by(
+            'assessment__course_offering__semester__start_date',
+            'assessment__due_date',
+            'assessment_id',
+        )[:limit]
     )
     labels = []
     values = []

@@ -76,7 +76,7 @@ def student_dashboard_view(request):
 
     # Course rows reflect the current semester; the trend charts still cover
     # every recorded semester.
-    rows, attendance_overall = analytics.student_course_rows(
+    rows, attendance_overall, recorded_course_scores = analytics.student_course_rows(
         student, institution, semester=current_semester
     )
     scored = [row['performance'] for row in rows if row['performance'] is not None]
@@ -112,9 +112,9 @@ def student_dashboard_view(request):
         'recent_results': analytics.recent_results(student, institution, limit=6),
         'risk_prediction': risk_prediction,
         'interventions': interventions,
-        # Distribution of the student's own recorded course scores, computed
-        # from the rows already loaded above (no extra database access).
-        'score_distribution': analytics.score_band_distribution(scored),
+        'score_distribution': analytics.score_band_distribution(
+            recorded_course_scores
+        ),
         'course_chart': {
             'labels': [row['course'].code for row in rows],
             'performance': [row['performance'] for row in rows],

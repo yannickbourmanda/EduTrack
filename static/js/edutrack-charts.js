@@ -133,7 +133,7 @@
       type: 'line',
       data: { labels: labels, datasets: datasets },
       options: baseOptions('Percentage (%)', Object.assign({
-        elements: { line: { tension: 0.25, borderWidth: 2 }, point: { radius: 3, hoverRadius: 4 } }
+        elements: { line: { tension: 0.4, borderWidth: 2 }, point: { radius: 3, hoverRadius: 5 } }
       }, options || {}))
     });
   }
